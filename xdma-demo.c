@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
 
 	struct xdma_chan_cfg rx_config;
 	rx_config.chan = dev.rx_chan;
-	rx_config.dir = XDMA_MEM_TO_DEV;
+	rx_config.dir = XDMA_DEV_TO_MEM;
 	rx_config.coalesc = 1;
 	rx_config.delay = 0;
 	rx_config.reset = 0;
@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
 
 	struct xdma_chan_cfg tx_config;
 	tx_config.chan = dev.tx_chan;
-	tx_config.dir = XDMA_DEV_TO_MEM;
+	tx_config.dir = XDMA_MEM_TO_DEV;
 	tx_config.coalesc = 1;
 	tx_config.delay = 0;
 	tx_config.reset = 0;
@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
 	rx_buf.chan = dev.rx_chan;
 	rx_buf.buf_offset = (u32) 0;
 	rx_buf.buf_size = (u32) 100;
-	rx_buf.dir = XDMA_MEM_TO_DEV;
+	rx_buf.dir = XDMA_DEV_TO_MEM;
 	if (ioctl(fd, XDMA_PREP_BUF, &rx_buf) < 0) {
 		perror("Error ioctl set rx buf");
 		exit(EXIT_FAILURE);
@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
 	tx_buf.chan = dev.tx_chan;
 	tx_buf.buf_offset = (u32) 101;
 	tx_buf.buf_size = (u32) 100;
-	tx_buf.dir = XDMA_DEV_TO_MEM;
+	tx_buf.dir = XDMA_MEM_TO_DEV;
 	if (ioctl(fd, XDMA_PREP_BUF, &tx_buf) < 0) {
 		perror("Error ioctl set tx buf");
 		exit(EXIT_FAILURE);
@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
 
 	struct xdma_transfer tx_trans;
 	tx_trans.chan = dev.tx_chan;
-	tx_trans.wait = 1;
+	tx_trans.wait = 0;
 	if (ioctl(fd, XDMA_START_TRANSFER, &tx_trans) < 0) {
 		perror("Error ioctl start tx trans");
 		exit(EXIT_FAILURE);
