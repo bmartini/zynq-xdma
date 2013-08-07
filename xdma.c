@@ -467,6 +467,8 @@ static void __exit xdma_exit(void)
 	if (xdma_addr) {
 		dma_free_coherent(NULL, BUFFER_LENGTH, xdma_addr, xdma_handle);
 	}
+	
+	platform_device_unregister(&xdma_device);
 
 	platform_driver_unregister(&xdma_driver);
 }
