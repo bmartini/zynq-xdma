@@ -162,7 +162,7 @@ void xdma_prep_slave_buf(struct xdma_buf_info *buf_info)
 	dma_addr_t buf;
 	size_t len;
 	enum dma_transfer_direction dir;
-	unsigned long flags;
+	enum dma_ctrl_flags flags;
 	struct dma_async_tx_descriptor *chan_desc;
 	struct completion *cmp;
 	dma_cookie_t cookie;
@@ -395,11 +395,11 @@ void xdma_probe(void)
 	dma_cap_set(DMA_SLAVE | DMA_PRIVATE, mask);
 
 	for (;;) {
-		match_tx = (DMA_TO_DEVICE & 0xFF) | XILINX_DMA_IP_DMA;
+		match_tx = (DMA_MEM_TO_DEV & 0xFF) | XILINX_DMA_IP_DMA;
 		tx_chan = dma_request_channel(mask, xdma_filter,
 					      (void *)&match_tx);
 
-		match_rx = (DMA_FROM_DEVICE & 0xFF) | XILINX_DMA_IP_DMA;
+		match_rx = (DMA_DEV_TO_MEM & 0xFF) | XILINX_DMA_IP_DMA;
 		rx_chan = dma_request_channel(mask, xdma_filter,
 					      (void *)&match_rx);
 
