@@ -390,15 +390,11 @@ static int xdma_probe(struct platform_device *pdev)
 	dma_cap_mask_t mask;
 	u32 match_tx, match_rx;
 	struct dma_chan *tx_chan, *rx_chan;
-	//u32 device_id = 0;
 
 	dma_cap_zero(mask);
 	dma_cap_set(DMA_SLAVE | DMA_PRIVATE, mask);
 
 	for (;;) {
-		//match_tx = (DMA_TO_DEVICE & 0xFF) | XILINX_DMA_IP_DMA |
-		//      (device_id << 28);
-
 		match_tx = (DMA_TO_DEVICE & 0xFF) | XILINX_DMA_IP_DMA;
 		tx_chan = dma_request_channel(mask, xdma_filter,
 					      (void *)&match_tx);
@@ -414,10 +410,9 @@ static int xdma_probe(struct platform_device *pdev)
 		} else {
 			printk(KERN_INFO "<%s> tx & rx chan found\n",
 			       MODULE_NAME);
+
 			xdma_add_dev_info(tx_chan, rx_chan);
 		}
-
-		//device_id++;
 	}
 
 	return 0;
