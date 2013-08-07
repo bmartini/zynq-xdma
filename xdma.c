@@ -25,9 +25,7 @@ char *xdma_addr;
 dma_addr_t xdma_handle;
 
 struct xdma_dev *xdma_dev_info[MAX_DEVICES + 1];
-static u64 dma_mask = 0xFFFFFFFFUL;
 u32 num_devices;
-struct completion cmp;
 
 static int xdma_open(struct inode *i, struct file *f)
 {
@@ -133,6 +131,11 @@ enum dma_transfer_direction xdma_to_dma_direction(enum xdma_direction xdma_dir)
 	return dma_dir;
 }
 
+static void xdma_sync_callback(void *completion)
+{
+	complete(completion);
+}
+
 void xdma_device_control(struct xdma_chan_cfg *chan_cfg)
 {
 	struct dma_chan *chan;
@@ -161,11 +164,13 @@ void xdma_prep_slave_buf(struct xdma_buf_info *buf_info)
 	enum dma_transfer_direction dir;
 	unsigned long flags;
 	struct dma_async_tx_descriptor *chan_desc;
+	struct completion *cmp;
 	dma_cookie_t cookie;
 
 	printk(KERN_INFO "<%s> ioctl: xdma prep slave buf\n", MODULE_NAME);
 
 	chan = (struct dma_chan *)buf_info->chan;
+	cmp = (struct completion *)buf_info->completion;
 	buf = xdma_handle + buf_info->buf_offset;
 	len = buf_info->buf_size;
 	dir = xdma_to_dma_direction(buf_info->dir);
@@ -174,24 +179,54 @@ void xdma_prep_slave_buf(struct xdma_buf_info *buf_info)
 
 	chan_desc = dmaengine_prep_slave_single(chan, buf, len, dir, flags);
 
-	// set the prepared descriptor to be executed by the engine
-	cookie = chan_desc->tx_submit(chan_desc);
-	printk(KERN_INFO "<%s> ioctl: after tx_submit function \n",
-	       MODULE_NAME);
+	if (!chan_desc) {
+		printk(KERN_ERR
+		       "<%s> ioctl: dmaengine_prep_slave_single error\n",
+		       MODULE_NAME);
+
+		buf_info->cookie = (u32) NULL;
+	} else {
+		chan_desc->callback = xdma_sync_callback;
+		chan_desc->callback_param = cmp;
+
+		// set the prepared descriptor to be executed by the engine
+		cookie = chan_desc->tx_submit(chan_desc);
+		if (dma_submit_error(cookie)) {
+			printk(KERN_ERR "<%s> ioctl: tx_submit error\n",
+			       MODULE_NAME);
+		}
+
+		buf_info->cookie = (u32) & cookie;
+	}
 }
 
 void xdma_start_transfer(struct xdma_transfer *tx_info)
 {
 	unsigned long tmo = msecs_to_jiffies(3000);
+	enum dma_status status;
+	struct dma_chan *chan;
+	struct completion *cmp;
+	dma_cookie_t cookie;
 
-	init_completion(&cmp);
-	if (tx_info->chan)
-		dma_async_issue_pending((struct dma_chan *)tx_info->chan);
+	chan = (struct dma_chan *)tx_info->chan;
+	cmp = (struct completion *)tx_info->completion;
+	cookie = tx_info->cookie;
+
+	init_completion(cmp);
+	dma_async_issue_pending(chan);
 
 	if (tx_info->wait) {
-		tmo = wait_for_completion_timeout(&cmp, tmo);
-		if (0 == tmo)
-			pr_err("Timeout has occured...\n");
+		tmo = wait_for_completion_timeout(cmp, tmo);
+		status = dma_async_is_tx_complete(chan, cookie, NULL, NULL);
+		if (0 == tmo) {
+			printk(KERN_INFO "<%s> transfer timed out\n",
+			       MODULE_NAME);
+		} else if (status != DMA_SUCCESS) {
+			printk(KERN_INFO
+			       "<%s> transfer returned completion callback of status \'%s\'\n",
+			       MODULE_NAME,
+			       status == DMA_ERROR ? "error" : "in progress");
+		}
 	}
 }
 
@@ -269,6 +304,11 @@ static long xdma_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				return -EFAULT;
 
 			xdma_prep_slave_buf(&buf_info);
+
+			if (copy_to_user((struct xdma_buf_info *)arg,
+					 &buf_info, sizeof(struct xdma_buf_info)))
+				return -EFAULT;
+
 			break;
 		}
 	case XDMA_START_TRANSFER:
@@ -324,11 +364,23 @@ static bool xdma_filter(struct dma_chan *chan, void *param)
 
 void xdma_add_dev_info(struct dma_chan *tx_chan, struct dma_chan *rx_chan)
 {
+	struct completion *tx_cmp, *rx_cmp;
+
+	tx_cmp = (struct completion *)
+	    kzalloc(sizeof(struct completion), GFP_KERNEL);
+
+	rx_cmp = (struct completion *)
+	    kzalloc(sizeof(struct completion), GFP_KERNEL);
+
 	xdma_dev_info[num_devices] = (struct xdma_dev *)
 	    kzalloc(sizeof(struct xdma_dev), GFP_KERNEL);
 
 	xdma_dev_info[num_devices]->tx_chan = (u32) tx_chan;
+	xdma_dev_info[num_devices]->tx_cmp = (u32) tx_cmp;
+
 	xdma_dev_info[num_devices]->rx_chan = (u32) rx_chan;
+	xdma_dev_info[num_devices]->rx_cmp = (u32) rx_cmp;
+
 	xdma_dev_info[num_devices]->device_id = num_devices;
 	num_devices++;
 }
@@ -381,9 +433,18 @@ static int xdma_remove(struct platform_device *op)
 				dma_release_channel((struct dma_chan *)
 						    xdma_dev_info[i]->tx_chan);
 
+			if (xdma_dev_info[i]->tx_cmp)
+				kfree((struct completion *)
+				      xdma_dev_info[i]->tx_cmp);
+
 			if (xdma_dev_info[i]->rx_chan)
 				dma_release_channel((struct dma_chan *)
 						    xdma_dev_info[i]->rx_chan);
+
+			if (xdma_dev_info[i]->rx_cmp)
+				kfree((struct completion *)
+				      xdma_dev_info[i]->rx_cmp);
+
 		}
 	}
 
