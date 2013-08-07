@@ -25,9 +25,7 @@ char *xdma_addr;
 dma_addr_t xdma_handle;
 
 struct xdma_dev *xdma_dev_info[MAX_DEVICES + 1];
-static u64 dma_mask = 0xFFFFFFFFUL;
 u32 num_devices;
-struct completion cmp;
 
 static int xdma_open(struct inode *i, struct file *f)
 {
@@ -133,6 +131,11 @@ enum dma_transfer_direction xdma_to_dma_direction(enum xdma_direction xdma_dir)
 	return dma_dir;
 }
 
+static void xdma_sync_callback(void *completion)
+{
+	complete(completion);
+}
+
 void xdma_device_control(struct xdma_chan_cfg *chan_cfg)
 {
 	struct dma_chan *chan;
@@ -159,13 +162,15 @@ void xdma_prep_slave_buf(struct xdma_buf_info *buf_info)
 	dma_addr_t buf;
 	size_t len;
 	enum dma_transfer_direction dir;
-	unsigned long flags;
+	enum dma_ctrl_flags flags;
 	struct dma_async_tx_descriptor *chan_desc;
+	struct completion *cmp;
 	dma_cookie_t cookie;
 
 	printk(KERN_INFO "<%s> ioctl: xdma prep slave buf\n", MODULE_NAME);
 
 	chan = (struct dma_chan *)buf_info->chan;
+	cmp = (struct completion *)buf_info->completion;
 	buf = xdma_handle + buf_info->buf_offset;
 	len = buf_info->buf_size;
 	dir = xdma_to_dma_direction(buf_info->dir);
@@ -174,24 +179,54 @@ void xdma_prep_slave_buf(struct xdma_buf_info *buf_info)
 
 	chan_desc = dmaengine_prep_slave_single(chan, buf, len, dir, flags);
 
-	// set the prepared descriptor to be executed by the engine
-	cookie = chan_desc->tx_submit(chan_desc);
-	printk(KERN_INFO "<%s> ioctl: after tx_submit function \n",
-	       MODULE_NAME);
+	if (!chan_desc) {
+		printk(KERN_ERR
+		       "<%s> ioctl: dmaengine_prep_slave_single error\n",
+		       MODULE_NAME);
+
+		buf_info->cookie = (u32) NULL;
+	} else {
+		chan_desc->callback = xdma_sync_callback;
+		chan_desc->callback_param = cmp;
+
+		// set the prepared descriptor to be executed by the engine
+		cookie = chan_desc->tx_submit(chan_desc);
+		if (dma_submit_error(cookie)) {
+			printk(KERN_ERR "<%s> ioctl: tx_submit error\n",
+			       MODULE_NAME);
+		}
+
+		buf_info->cookie = (u32) & cookie;
+	}
 }
 
 void xdma_start_transfer(struct xdma_transfer *tx_info)
 {
 	unsigned long tmo = msecs_to_jiffies(3000);
+	enum dma_status status;
+	struct dma_chan *chan;
+	struct completion *cmp;
+	dma_cookie_t cookie;
 
-	init_completion(&cmp);
-	if (tx_info->chan)
-		dma_async_issue_pending((struct dma_chan *)tx_info->chan);
+	chan = (struct dma_chan *)tx_info->chan;
+	cmp = (struct completion *)tx_info->completion;
+	cookie = tx_info->cookie;
+
+	init_completion(cmp);
+	dma_async_issue_pending(chan);
 
 	if (tx_info->wait) {
-		tmo = wait_for_completion_timeout(&cmp, tmo);
-		if (0 == tmo)
-			pr_err("Timeout has occured...\n");
+		tmo = wait_for_completion_timeout(cmp, tmo);
+		status = dma_async_is_tx_complete(chan, cookie, NULL, NULL);
+		if (0 == tmo) {
+			printk(KERN_INFO "<%s> transfer timed out\n",
+			       MODULE_NAME);
+		} else if (status != DMA_SUCCESS) {
+			printk(KERN_INFO
+			       "<%s> transfer returned completion callback of status \'%s\'\n",
+			       MODULE_NAME,
+			       status == DMA_ERROR ? "error" : "in progress");
+		}
 	}
 }
 
@@ -269,6 +304,11 @@ static long xdma_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				return -EFAULT;
 
 			xdma_prep_slave_buf(&buf_info);
+
+			if (copy_to_user((struct xdma_buf_info *)arg,
+					 &buf_info, sizeof(struct xdma_buf_info)))
+				return -EFAULT;
+
 			break;
 		}
 	case XDMA_START_TRANSFER:
@@ -304,6 +344,81 @@ static long xdma_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	return 0;
 }
 
+static int xdma_test(void)
+{
+	const int LENGTH = 1024;
+
+	int i;
+
+	struct xdma_chan_cfg rx_config;
+	struct xdma_chan_cfg tx_config;
+
+	struct xdma_buf_info tx_buf;
+	struct xdma_buf_info rx_buf;
+
+	struct xdma_transfer rx_trans;
+	struct xdma_transfer tx_trans;
+
+	// fill tx with a value
+	memset(xdma_addr + LENGTH, 3, LENGTH);
+
+	// test before transfer:
+	printk(KERN_INFO "<%s> test: rx buffer before transmit:\n",
+	       MODULE_NAME);
+	memset(xdma_addr, 1, LENGTH);	// fill rx with a value
+	for (i = 0; i < 10; i++) {
+		printk("%d\t", xdma_addr[i]);
+	}
+	printk("\n");
+
+	rx_config.chan = xdma_dev_info[0]->rx_chan;
+	rx_config.coalesc = 1;
+	rx_config.delay = 0;
+	xdma_device_control(&rx_config);
+
+	tx_config.chan = xdma_dev_info[0]->tx_chan;
+	tx_config.coalesc = 1;
+	tx_config.delay = 0;
+	xdma_device_control(&tx_config);
+
+	rx_buf.chan = xdma_dev_info[0]->rx_chan;
+	rx_buf.buf_offset = (u32) 0;
+	rx_buf.buf_size = (u32) LENGTH;
+	rx_buf.dir = XDMA_DEV_TO_MEM;
+	rx_buf.completion = (u32) xdma_dev_info[0]->rx_cmp;
+	xdma_prep_slave_buf(&rx_buf);
+
+	tx_buf.chan = xdma_dev_info[0]->tx_chan;
+	tx_buf.buf_offset = (u32) LENGTH;
+	tx_buf.buf_size = (u32) LENGTH;
+	tx_buf.dir = XDMA_MEM_TO_DEV;
+	tx_buf.completion = (u32) xdma_dev_info[0]->tx_cmp;
+	xdma_prep_slave_buf(&tx_buf);
+
+	printk(KERN_INFO "<%s> test: xdma_start_transfer rx\n", MODULE_NAME);
+	rx_trans.chan = xdma_dev_info[0]->rx_chan;
+	rx_trans.wait = 0;
+	rx_trans.completion = (u32) xdma_dev_info[0]->rx_cmp;
+	rx_trans.cookie = rx_buf.cookie;
+	xdma_start_transfer(&rx_trans);
+
+	printk(KERN_INFO "<%s> test: xdma_start_transfer tx\n", MODULE_NAME);
+	tx_trans.chan = xdma_dev_info[0]->tx_chan;
+	tx_trans.wait = 1;
+	tx_trans.completion = (u32) xdma_dev_info[0]->tx_cmp;
+	tx_trans.cookie = tx_buf.cookie;
+	xdma_start_transfer(&tx_trans);
+
+	// test after transfer:
+	printk(KERN_INFO "<%s> test: rx buffer after transmit:\n", MODULE_NAME);
+	for (i = 0; i < 10; i++) {
+		printk("%d\t", xdma_addr[i]);
+	}
+	printk("\n");
+
+	return 0;
+}
+
 static struct file_operations fops = {
 	.owner = THIS_MODULE,
 	.open = xdma_open,
@@ -324,34 +439,42 @@ static bool xdma_filter(struct dma_chan *chan, void *param)
 
 void xdma_add_dev_info(struct dma_chan *tx_chan, struct dma_chan *rx_chan)
 {
+	struct completion *tx_cmp, *rx_cmp;
+
+	tx_cmp = (struct completion *)
+	    kzalloc(sizeof(struct completion), GFP_KERNEL);
+
+	rx_cmp = (struct completion *)
+	    kzalloc(sizeof(struct completion), GFP_KERNEL);
+
 	xdma_dev_info[num_devices] = (struct xdma_dev *)
 	    kzalloc(sizeof(struct xdma_dev), GFP_KERNEL);
 
 	xdma_dev_info[num_devices]->tx_chan = (u32) tx_chan;
+	xdma_dev_info[num_devices]->tx_cmp = (u32) tx_cmp;
+
 	xdma_dev_info[num_devices]->rx_chan = (u32) rx_chan;
+	xdma_dev_info[num_devices]->rx_cmp = (u32) rx_cmp;
+
 	xdma_dev_info[num_devices]->device_id = num_devices;
 	num_devices++;
 }
 
-static int xdma_probe(struct platform_device *pdev)
+void xdma_probe(void)
 {
 	dma_cap_mask_t mask;
 	u32 match_tx, match_rx;
 	struct dma_chan *tx_chan, *rx_chan;
-	//u32 device_id = 0;
 
 	dma_cap_zero(mask);
 	dma_cap_set(DMA_SLAVE | DMA_PRIVATE, mask);
 
 	for (;;) {
-		//match_tx = (DMA_TO_DEVICE & 0xFF) | XILINX_DMA_IP_DMA |
-		//      (device_id << 28);
-
-		match_tx = (DMA_TO_DEVICE & 0xFF) | XILINX_DMA_IP_DMA;
+		match_tx = (DMA_MEM_TO_DEV & 0xFF) | XILINX_DMA_IP_DMA;
 		tx_chan = dma_request_channel(mask, xdma_filter,
 					      (void *)&match_tx);
 
-		match_rx = (DMA_FROM_DEVICE & 0xFF) | XILINX_DMA_IP_DMA;
+		match_rx = (DMA_DEV_TO_MEM & 0xFF) | XILINX_DMA_IP_DMA;
 		rx_chan = dma_request_channel(mask, xdma_filter,
 					      (void *)&match_rx);
 
@@ -362,16 +485,13 @@ static int xdma_probe(struct platform_device *pdev)
 		} else {
 			printk(KERN_INFO "<%s> tx & rx chan found\n",
 			       MODULE_NAME);
+
 			xdma_add_dev_info(tx_chan, rx_chan);
 		}
-
-		//device_id++;
 	}
-
-	return 0;
 }
 
-static int xdma_remove(struct platform_device *op)
+void xdma_remove(void)
 {
 	int i;
 
@@ -381,36 +501,21 @@ static int xdma_remove(struct platform_device *op)
 				dma_release_channel((struct dma_chan *)
 						    xdma_dev_info[i]->tx_chan);
 
+			if (xdma_dev_info[i]->tx_cmp)
+				kfree((struct completion *)
+				      xdma_dev_info[i]->tx_cmp);
+
 			if (xdma_dev_info[i]->rx_chan)
 				dma_release_channel((struct dma_chan *)
 						    xdma_dev_info[i]->rx_chan);
+
+			if (xdma_dev_info[i]->rx_cmp)
+				kfree((struct completion *)
+				      xdma_dev_info[i]->rx_cmp);
+
 		}
 	}
-
-	return 0;
 }
-
-static struct platform_driver xdma_driver = {
-	.driver = {
-		   .name = MODULE_NAME,
-		   },
-	.probe = xdma_probe,
-	.remove = xdma_remove,
-	.suspend = NULL,
-	.resume = NULL,
-};
-
-static struct platform_device xdma_device = {
-	.name = MODULE_NAME,
-	.id = 0,
-	.dev = {
-		.platform_data = NULL,
-		.dma_mask = &dma_mask,
-		.coherent_dma_mask = 0xFFFFFFFF,
-		},
-	.resource = NULL,
-	.num_resources = 0,
-};
 
 static int __init xdma_init(void)
 {
@@ -449,9 +554,10 @@ static int __init xdma_init(void)
 		return -ENOMEM;
 	}
 
-	platform_device_register(&xdma_device);
+	xdma_probe();
+	xdma_test();
 
-	return platform_driver_register(&xdma_driver);
+	return 0;
 }
 
 static void __exit xdma_exit(void)
@@ -463,14 +569,12 @@ static void __exit xdma_exit(void)
 	unregister_chrdev_region(dev_num, 1);
 	printk(KERN_INFO "<%s> unregistered\n", MODULE_NAME);
 
+	xdma_remove();
+
 	/* free mmap area */
 	if (xdma_addr) {
 		dma_free_coherent(NULL, BUFFER_LENGTH, xdma_addr, xdma_handle);
 	}
-	
-	platform_device_unregister(&xdma_device);
-
-	platform_driver_unregister(&xdma_driver);
 }
 
 module_init(xdma_init);

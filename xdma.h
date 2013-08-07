@@ -28,7 +28,9 @@ extern "C" {
 
 	struct xdma_dev {
 		u32 tx_chan;	/* (struct dma_chan *) */
+		u32 tx_cmp;	/* (struct completion *) callback_param */
 		u32 rx_chan;	/* (struct dma_chan *) */
+		u32 rx_cmp;	/* (struct completion *) callback_param */
 		u32 device_id;
 	};
 
@@ -43,6 +45,8 @@ extern "C" {
 
 	struct xdma_buf_info {
 		u32 chan;	/* (struct dma_chan *) */
+		u32 completion;	/* (struct completion *) callback_param */
+		u32 cookie;	/* dma_cookie_t */
 
 		u32 buf_offset;
 		u32 buf_size;
@@ -51,6 +55,8 @@ extern "C" {
 
 	struct xdma_transfer {
 		u32 chan;	/* (struct dma_chan *) */
+		u32 completion;	/* (struct completion *) callback_param */
+		u32 cookie;	/* dma_cookie_t */
 
 		u32 wait;	/* true/false */
 	};
