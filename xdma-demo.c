@@ -47,15 +47,17 @@ int main(int argc, char *argv[])
 	 */
 	// fill tx with a value
 	for (i = 1; i <= LENGTH; i++) {
-		map[LENGTH + i] = 6;
+		map[LENGTH + i] = 66;
 	}
 
-	map[LENGTH] = 0;
+	map[LENGTH] = '\n';
 
 	// fill rx with a value
 	for (i = 0; i < LENGTH; i++) {
-		map[i] = 5;
+		map[i] = 65;
 	}
+
+	map[LENGTH + LENGTH + 1] = '\n';
 
 	printf("test: rx buffer before transmit:\n");
 	for (i = 0; i < 10; i++) {
