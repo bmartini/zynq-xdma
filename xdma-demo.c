@@ -12,11 +12,12 @@
 #include <sys/ioctl.h>
 
 #define FILEPATH "/dev/xdma"
-#define NUMINTS  (1000)
+#define NUMINTS  (4000)
 #define FILESIZE (NUMINTS * sizeof(int))
 
 int main(int argc, char *argv[])
 {
+	const int LENGTH = 1024;
 	int i;
 	int fd;
 	int *map;		/* mmapped array of int's */
@@ -42,14 +43,25 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-
 	/* Now write int's to the file as if it were memory (an array of ints).
 	 */
-	for (i = 0; i <= 100; ++i) {
-		map[i] = 2 * i;
+	// fill tx with a value
+	for (i = 1; i <= LENGTH; i++) {
+		map[LENGTH + i] = 6;
 	}
 
+	map[LENGTH] = 0;
 
+	// fill rx with a value
+	for (i = 0; i < LENGTH; i++) {
+		map[i] = 5;
+	}
+
+	printf("test: rx buffer before transmit:\n");
+	for (i = 0; i < 10; i++) {
+		printf("%d\t", map[i]);
+	}
+	printf("\n");
 
 	/* Query driver for number of devices.
 	 */
@@ -60,20 +72,20 @@ int main(int argc, char *argv[])
 	}
 	printf("Number of devices: %d\n", num_devices);
 
-
 	/* Query driver for number of devices.
 	 */
 	struct xdma_dev dev;
 	dev.tx_chan = (u32) NULL;
+	dev.tx_cmp = (u32) NULL;
 	dev.rx_chan = (u32) NULL;
+	dev.rx_cmp = (u32) NULL;
 	dev.device_id = num_devices - 1;
 	if (ioctl(fd, XDMA_GET_DEV_INFO, &dev) < 0) {
 		perror("Error ioctl getting device info");
 		exit(EXIT_FAILURE);
 	}
-	printf("devices chans tx: %d, rx, %d\n", dev.tx_chan, dev.rx_chan);
-
-
+	printf("devices tx chan: %d, tx cmp:%d, rx chan: %d, rx cmp: %d\n",
+	       dev.tx_chan, dev.tx_cmp, dev.rx_chan, dev.rx_cmp);
 
 	struct xdma_chan_cfg rx_config;
 	rx_config.chan = dev.rx_chan;
@@ -87,7 +99,6 @@ int main(int argc, char *argv[])
 	}
 	printf("config rx chans\n");
 
-
 	struct xdma_chan_cfg tx_config;
 	tx_config.chan = dev.tx_chan;
 	tx_config.dir = XDMA_MEM_TO_DEV;
@@ -100,11 +111,12 @@ int main(int argc, char *argv[])
 	}
 	printf("config tx chans\n");
 
-
 	struct xdma_buf_info rx_buf;
 	rx_buf.chan = dev.rx_chan;
+	rx_buf.completion = dev.rx_cmp;
+	rx_buf.cookie = (u32) NULL;
 	rx_buf.buf_offset = (u32) 0;
-	rx_buf.buf_size = (u32) 100;
+	rx_buf.buf_size = (u32) LENGTH;
 	rx_buf.dir = XDMA_DEV_TO_MEM;
 	if (ioctl(fd, XDMA_PREP_BUF, &rx_buf) < 0) {
 		perror("Error ioctl set rx buf");
@@ -112,11 +124,12 @@ int main(int argc, char *argv[])
 	}
 	printf("config rx buffer\n");
 
-
 	struct xdma_buf_info tx_buf;
 	tx_buf.chan = dev.tx_chan;
-	tx_buf.buf_offset = (u32) 101;
-	tx_buf.buf_size = (u32) 100;
+	tx_buf.completion = dev.tx_cmp;
+	tx_buf.cookie = (u32) NULL;
+	tx_buf.buf_offset = (u32) (LENGTH + 1);
+	tx_buf.buf_size = (u32) LENGTH;
 	tx_buf.dir = XDMA_MEM_TO_DEV;
 	if (ioctl(fd, XDMA_PREP_BUF, &tx_buf) < 0) {
 		perror("Error ioctl set tx buf");
@@ -124,10 +137,10 @@ int main(int argc, char *argv[])
 	}
 	printf("config tx buffer\n");
 
-
-
 	struct xdma_transfer rx_trans;
 	rx_trans.chan = dev.rx_chan;
+	rx_trans.completion = dev.rx_cmp;
+	rx_trans.cookie = rx_buf.cookie;
 	rx_trans.wait = 0;
 	if (ioctl(fd, XDMA_START_TRANSFER, &rx_trans) < 0) {
 		perror("Error ioctl start rx trans");
@@ -135,9 +148,10 @@ int main(int argc, char *argv[])
 	}
 	printf("config rx trans\n");
 
-
 	struct xdma_transfer tx_trans;
 	tx_trans.chan = dev.tx_chan;
+	tx_trans.completion = dev.tx_cmp;
+	tx_trans.cookie = tx_buf.cookie;
 	tx_trans.wait = 0;
 	if (ioctl(fd, XDMA_START_TRANSFER, &tx_trans) < 0) {
 		perror("Error ioctl start tx trans");
@@ -145,13 +159,18 @@ int main(int argc, char *argv[])
 	}
 	printf("config tx trans\n");
 
-
-
-
-	for (i = 0; i <= 201; ++i) {
-		printf("%d: %d\n", i, map[i]);
+	printf("test: rx buffer after transmit:\n");
+	for (i = 0; i < 10; ++i) {
+		printf("%d\t", map[i]);
 	}
+	printf("\n");
 
+#if 0
+	for (i = 0; i < NUMINTS; ++i) {
+		printf("%d\t", map[i]);
+	}
+	printf("\n");
+#endif
 
 	/* Don't forget to free the mmapped memory
 	 */
