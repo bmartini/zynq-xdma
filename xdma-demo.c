@@ -12,15 +12,15 @@
 #include <sys/ioctl.h>
 
 #define FILEPATH "/dev/xdma"
-#define NUMINTS  (4000)
-#define FILESIZE (NUMINTS * sizeof(int))
+#define MAP_SIZE  (4000)
+#define FILESIZE (MAP_SIZE * sizeof(char))
 
 int main(int argc, char *argv[])
 {
 	const int LENGTH = 1024;
 	int i;
 	int fd;
-	int *map;		/* mmapped array of int's */
+	char *map;		/* mmapped array of char's */
 
 	/* Open a file for writing.
 	 *  - Creating the file if it doesn't exist.
@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
 	printf("\n");
 
 #if 0
-	for (i = 0; i < NUMINTS; ++i) {
+	for (i = 0; i < MAP_SIZE; ++i) {
 		printf("%d\t", map[i]);
 	}
 	printf("\n");
