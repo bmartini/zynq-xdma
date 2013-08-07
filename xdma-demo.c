@@ -174,12 +174,6 @@ int main(int argc, char *argv[])
 	printf("\n");
 #endif
 
-	if (ioctl(fd, XDMA_TEST_TRANSFER, NULL) < 0) {
-		perror("Error ioctl test trans");
-		exit(EXIT_FAILURE);
-	}
-	printf("test trans\n");
-
 	/* Don't forget to free the mmapped memory
 	 */
 	if (munmap(map, FILESIZE) == -1) {
