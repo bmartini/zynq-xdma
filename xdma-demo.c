@@ -46,18 +46,16 @@ int main(int argc, char *argv[])
 	/* Now write int's to the file as if it were memory (an array of ints).
 	 */
 	// fill tx with a value
-	for (i = 1; i <= LENGTH; i++) {
-		map[LENGTH + i] = 66;
+	for (i = 0; i < LENGTH; i++) {
+		map[LENGTH + i] = 'B';
 	}
-
-	map[LENGTH] = '\n';
+	map[LENGTH + LENGTH - 1] = '\n';
 
 	// fill rx with a value
 	for (i = 0; i < LENGTH; i++) {
-		map[i] = 65;
+		map[i] = 'A';
 	}
-
-	map[LENGTH + LENGTH + 1] = '\n';
+	map[LENGTH - 1] = '\n';
 
 	printf("test: rx buffer before transmit:\n");
 	for (i = 0; i < 10; i++) {
@@ -130,7 +128,7 @@ int main(int argc, char *argv[])
 	tx_buf.chan = dev.tx_chan;
 	tx_buf.completion = dev.tx_cmp;
 	tx_buf.cookie = (u32) NULL;
-	tx_buf.buf_offset = (u32) (LENGTH + 1);
+	tx_buf.buf_offset = (u32) LENGTH;
 	tx_buf.buf_size = (u32) LENGTH;
 	tx_buf.dir = XDMA_MEM_TO_DEV;
 	if (ioctl(fd, XDMA_PREP_BUF, &tx_buf) < 0) {

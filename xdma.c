@@ -256,10 +256,10 @@ static int xdma_test(void)
 	struct xdma_transfer rx_trans;
 	struct xdma_transfer tx_trans;
 
-	memset(xdma_addr, 89, LENGTH);	// fill rx with a value
-	xdma_addr[LENGTH] = '\n';
-	memset(xdma_addr + LENGTH + 1, 90, LENGTH);	// fill tx with a value
-	xdma_addr[LENGTH + LENGTH + 1] = '\n';
+	memset(xdma_addr, 'Y', LENGTH);	// fill rx with a value
+	xdma_addr[LENGTH - 1] = '\n';
+	memset(xdma_addr + LENGTH, 'Z', LENGTH);	// fill tx with a value
+	xdma_addr[LENGTH + LENGTH - 1] = '\n';
 
 	// test before transfer:
 	printk(KERN_INFO "<%s> test: rx buffer before transmit:\n",
