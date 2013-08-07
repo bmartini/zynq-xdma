@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
 		perror("Error ioctl getting device info");
 		exit(EXIT_FAILURE);
 	}
-	printf("devices tx chan: %d, tx cmp:%d, rx chan: %d, rx cmp: %d\n",
+	printf("devices tx chan: %x, tx cmp:%x, rx chan: %x, rx cmp: %x\n",
 	       dev.tx_chan, dev.tx_cmp, dev.rx_chan, dev.rx_cmp);
 
 	struct xdma_chan_cfg rx_config;
