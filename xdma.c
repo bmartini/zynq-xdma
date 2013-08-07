@@ -385,7 +385,7 @@ void xdma_add_dev_info(struct dma_chan *tx_chan, struct dma_chan *rx_chan)
 	num_devices++;
 }
 
-static int xdma_probe(struct platform_device *pdev)
+void xdma_probe(void)
 {
 	dma_cap_mask_t mask;
 	u32 match_tx, match_rx;
@@ -414,11 +414,9 @@ static int xdma_probe(struct platform_device *pdev)
 			xdma_add_dev_info(tx_chan, rx_chan);
 		}
 	}
-
-	return 0;
 }
 
-static int xdma_remove(struct platform_device *op)
+void xdma_remove(void)
 {
 	int i;
 
@@ -442,31 +440,7 @@ static int xdma_remove(struct platform_device *op)
 
 		}
 	}
-
-	return 0;
 }
-
-static struct platform_driver xdma_driver = {
-	.driver = {
-		   .name = MODULE_NAME,
-		   },
-	.probe = xdma_probe,
-	.remove = xdma_remove,
-	.suspend = NULL,
-	.resume = NULL,
-};
-
-static struct platform_device xdma_device = {
-	.name = MODULE_NAME,
-	.id = 0,
-	.dev = {
-		.platform_data = NULL,
-		.dma_mask = &dma_mask,
-		.coherent_dma_mask = 0xFFFFFFFF,
-		},
-	.resource = NULL,
-	.num_resources = 0,
-};
 
 static int __init xdma_init(void)
 {
@@ -505,9 +479,9 @@ static int __init xdma_init(void)
 		return -ENOMEM;
 	}
 
-	platform_device_register(&xdma_device);
+	xdma_probe();
 
-	return platform_driver_register(&xdma_driver);
+	return 0;
 }
 
 static void __exit xdma_exit(void)
@@ -519,14 +493,12 @@ static void __exit xdma_exit(void)
 	unregister_chrdev_region(dev_num, 1);
 	printk(KERN_INFO "<%s> unregistered\n", MODULE_NAME);
 
+	xdma_remove();
+
 	/* free mmap area */
 	if (xdma_addr) {
 		dma_free_coherent(NULL, BUFFER_LENGTH, xdma_addr, xdma_handle);
 	}
-	
-	platform_device_unregister(&xdma_device);
-
-	platform_driver_unregister(&xdma_driver);
 }
 
 module_init(xdma_init);
