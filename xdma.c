@@ -359,17 +359,20 @@ static int xdma_test(void)
 	struct xdma_transfer rx_trans;
 	struct xdma_transfer tx_trans;
 
-	// fill tx with a value
-	memset(xdma_addr + LENGTH, 3, LENGTH);
+
+	memset(xdma_addr, 89, LENGTH);	// fill rx with a value
+	xdma_addr[LENGTH] = '\n';
+	memset(xdma_addr + LENGTH + 1, 90, LENGTH); // fill tx with a value
+	xdma_addr[LENGTH+LENGTH+1] = '\n';
 
 	// test before transfer:
 	printk(KERN_INFO "<%s> test: rx buffer before transmit:\n",
 	       MODULE_NAME);
-	memset(xdma_addr, 1, LENGTH);	// fill rx with a value
 	for (i = 0; i < 10; i++) {
 		printk("%d\t", xdma_addr[i]);
 	}
 	printk("\n");
+
 
 	rx_config.chan = xdma_dev_info[0]->rx_chan;
 	rx_config.coalesc = 1;
