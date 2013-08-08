@@ -1,3 +1,6 @@
+/*
+ * Wrapper Driver used to control a two-channel Xilinx DMA Engine
+ */
 #include "xdma.h"
 
 #include <linux/module.h>
@@ -253,7 +256,7 @@ void xdma_test_transfer(void)
 	memset(xdma_addr + LENGTH, 'Z', LENGTH);	// fill tx with a value
 	xdma_addr[LENGTH + LENGTH - 1] = '\n';
 
-	// test before transfer:
+	// display contents before transfer:
 	printk(KERN_INFO "<%s> test: rx buffer before transmit:\n",
 	       MODULE_NAME);
 	for (i = 0; i < 10; i++) {
@@ -261,7 +264,7 @@ void xdma_test_transfer(void)
 	}
 	printk("\n");
 
-	//measure time:
+	// measure time:
 	do_gettimeofday(&ti);
 
 	rx_config.chan = xdma_dev_info[0]->rx_chan;
@@ -300,7 +303,7 @@ void xdma_test_transfer(void)
 	tx_trans.completion = (u32) xdma_dev_info[0]->tx_cmp;
 	tx_trans.cookie = tx_buf.cookie;
 
-	//measure time to prepare channels:
+	// measure time to prepare channels:
 	do_gettimeofday(&tf);
 	printk(KERN_INFO "<%s> test: time to prepare DMA channels [us]: %ld\n",
 	       MODULE_NAME, (tf.tv_usec - ti.tv_usec));
@@ -310,7 +313,7 @@ void xdma_test_transfer(void)
 	xdma_start_transfer(&rx_trans);
 	xdma_start_transfer(&tx_trans);
 
-	//measure time:
+	// measure time:
 	do_gettimeofday(&tf);
 	printk(KERN_INFO "<%s> test: DMA transfer time [us]: %ld\n",
 	       MODULE_NAME, (tf.tv_usec - ti.tv_usec));
@@ -319,7 +322,7 @@ void xdma_test_transfer(void)
 	printk(KERN_INFO "<%s> test: DMA speed in Mbytes/s: %ld\n", MODULE_NAME,
 	       LENGTH / (tf.tv_usec - ti.tv_usec));
 
-	// test after transfer:
+	// display contents after transfer:
 	printk(KERN_INFO "<%s> test: rx buffer after transmit:\n", MODULE_NAME);
 	for (i = 0; i < 10; i++) {
 		printk("%c\t", xdma_addr[i]);
@@ -522,7 +525,7 @@ static int __init xdma_init(void)
 {
 	num_devices = 0;
 
-	/* device onstructor */
+	/* device constructor */
 	printk(KERN_INFO "<%s> init: registered\n", MODULE_NAME);
 	if (alloc_chrdev_region(&dev_num, 0, 1, MODULE_NAME) < 0) {
 		return -1;
@@ -555,6 +558,7 @@ static int __init xdma_init(void)
 		return -ENOMEM;
 	}
 
+	/* hardware setup */
 	xdma_probe();
 	xdma_test_transfer();
 
@@ -570,6 +574,7 @@ static void __exit xdma_exit(void)
 	unregister_chrdev_region(dev_num, 1);
 	printk(KERN_INFO "<%s> exit: unregistered\n", MODULE_NAME);
 
+	/* hardware shutdown */
 	xdma_remove();
 
 	/* free mmap area */
@@ -581,4 +586,4 @@ static void __exit xdma_exit(void)
 module_init(xdma_init);
 module_exit(xdma_exit);
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("MMAP Character Driver and Xilinx DMA");
+MODULE_DESCRIPTION("Wrapper Driver For A Xilinx DMA Engine");
