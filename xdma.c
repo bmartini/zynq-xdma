@@ -29,20 +29,20 @@ u32 num_devices;
 
 static int xdma_open(struct inode *i, struct file *f)
 {
-	printk(KERN_INFO "<%s> open()\n", MODULE_NAME);
+	printk(KERN_INFO "<%s> file: open()\n", MODULE_NAME);
 	return 0;
 }
 
 static int xdma_close(struct inode *i, struct file *f)
 {
-	printk(KERN_INFO "<%s> close()\n", MODULE_NAME);
+	printk(KERN_INFO "<%s> file: close()\n", MODULE_NAME);
 	return 0;
 }
 
 static ssize_t xdma_read(struct file *f, char __user * buf, size_t
 			 len, loff_t * off)
 {
-	printk(KERN_INFO "<%s> read()\n", MODULE_NAME);
+	printk(KERN_INFO "<%s> file: read()\n", MODULE_NAME);
 
 	return simple_read_from_buffer(buf, len, off, xdma_addr, BUFFER_LENGTH);
 }
@@ -50,7 +50,7 @@ static ssize_t xdma_read(struct file *f, char __user * buf, size_t
 static ssize_t xdma_write(struct file *f, const char __user * buf,
 			  size_t len, loff_t * off)
 {
-	printk(KERN_INFO "<%s> write()\n", MODULE_NAME);
+	printk(KERN_INFO "<%s> file: write()\n", MODULE_NAME);
 	if (len > (BUFFER_LENGTH - 1))
 		return -EINVAL;
 
@@ -65,8 +65,9 @@ static int xdma_mmap(struct file *filp, struct vm_area_struct *vma)
 	unsigned long requested_size;
 	requested_size = vma->vm_end - vma->vm_start;
 
-	printk(KERN_INFO "<%s> mmap...\n", MODULE_NAME);
-	printk(KERN_INFO "<%s> reserved: %d, requested: %lu\n",
+	printk(KERN_INFO "<%s> file: mmap()\n", MODULE_NAME);
+	printk(KERN_INFO
+	       "<%s> file: memory size reserved: %d, mmap size requested: %lu\n",
 	       MODULE_NAME, BUFFER_LENGTH, requested_size);
 
 	if (requested_size > BUFFER_LENGTH) {
@@ -88,8 +89,6 @@ static int xdma_mmap(struct file *filp, struct vm_area_struct *vma)
 
 		return -EAGAIN;
 	}
-
-	printk(KERN_INFO "<%s> mmap OK\n", MODULE_NAME);
 
 	return 0;
 }
@@ -160,8 +159,6 @@ void xdma_prep_buffer(struct xdma_buf_info *buf_info)
 	struct completion *cmp;
 	dma_cookie_t cookie;
 
-	printk(KERN_INFO "<%s> ioctl: xdma prep buffer\n", MODULE_NAME);
-
 	chan = (struct dma_chan *)buf_info->chan;
 	cmp = (struct completion *)buf_info->completion;
 	buf = xdma_handle + buf_info->buf_offset;
@@ -174,7 +171,7 @@ void xdma_prep_buffer(struct xdma_buf_info *buf_info)
 
 	if (!chan_desc) {
 		printk(KERN_ERR
-		       "<%s> ioctl: dmaengine_prep_slave_single error\n",
+		       "<%s> Error: dmaengine_prep_slave_single error\n",
 		       MODULE_NAME);
 
 		buf_info->cookie = (u32) NULL;
@@ -185,7 +182,7 @@ void xdma_prep_buffer(struct xdma_buf_info *buf_info)
 		// set the prepared descriptor to be executed by the engine
 		cookie = chan_desc->tx_submit(chan_desc);
 		if (dma_submit_error(cookie)) {
-			printk(KERN_ERR "<%s> ioctl: tx_submit error\n",
+			printk(KERN_ERR "<%s> Error: tx_submit error\n",
 			       MODULE_NAME);
 		}
 
@@ -212,11 +209,11 @@ void xdma_start_transfer(struct xdma_transfer *tx_info)
 		tmo = wait_for_completion_timeout(cmp, tmo);
 		status = dma_async_is_tx_complete(chan, cookie, NULL, NULL);
 		if (0 == tmo) {
-			printk(KERN_INFO "<%s> transfer timed out\n",
+			printk(KERN_ERR "<%s> Error: transfer timed out\n",
 			       MODULE_NAME);
 		} else if (status != DMA_SUCCESS) {
 			printk(KERN_INFO
-			       "<%s> transfer returned completion callback of status \'%s\'\n",
+			       "<%s> transfer: returned completion callback status of: \'%s\'\n",
 			       MODULE_NAME,
 			       status == DMA_ERROR ? "error" : "in progress");
 		}
@@ -260,7 +257,7 @@ void xdma_test_transfer(void)
 	printk(KERN_INFO "<%s> test: rx buffer before transmit:\n",
 	       MODULE_NAME);
 	for (i = 0; i < 10; i++) {
-		printk("%d\t", xdma_addr[i]);
+		printk("%c\t", xdma_addr[i]);
 	}
 	printk("\n");
 
@@ -325,7 +322,7 @@ void xdma_test_transfer(void)
 	// test after transfer:
 	printk(KERN_INFO "<%s> test: rx buffer after transmit:\n", MODULE_NAME);
 	for (i = 0; i < 10; i++) {
-		printk("%d\t", xdma_addr[i]);
+		printk("%c\t", xdma_addr[i]);
 	}
 	printk("\n");
 }
@@ -485,13 +482,11 @@ void xdma_probe(void)
 					      (void *)&match_rx);
 
 		if (!tx_chan && !rx_chan) {
-			printk(KERN_INFO "<%s> break probe loop\n",
-			       MODULE_NAME);
+			printk(KERN_INFO
+			       "<%s> probe: number of devices found: %d\n",
+			       MODULE_NAME, num_devices);
 			break;
 		} else {
-			printk(KERN_INFO "<%s> tx & rx chan found\n",
-			       MODULE_NAME);
-
 			xdma_add_dev_info(tx_chan, rx_chan);
 		}
 	}
@@ -528,7 +523,7 @@ static int __init xdma_init(void)
 	num_devices = 0;
 
 	/* device onstructor */
-	printk(KERN_INFO "<%s> registered\n", MODULE_NAME);
+	printk(KERN_INFO "<%s> init: registered\n", MODULE_NAME);
 	if (alloc_chrdev_region(&dev_num, 0, 1, MODULE_NAME) < 0) {
 		return -1;
 	}
@@ -573,7 +568,7 @@ static void __exit xdma_exit(void)
 	device_destroy(cl, dev_num);
 	class_destroy(cl);
 	unregister_chrdev_region(dev_num, 1);
-	printk(KERN_INFO "<%s> unregistered\n", MODULE_NAME);
+	printk(KERN_INFO "<%s> exit: unregistered\n", MODULE_NAME);
 
 	xdma_remove();
 
