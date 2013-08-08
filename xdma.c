@@ -242,7 +242,7 @@ void xdma_stop_transfer(struct dma_chan *chan)
 	}
 }
 
-static int xdma_test(void)
+void xdma_test_transfer(void)
 {
 	const int LENGTH = 1048576;	// max image is 1024x1024 for now!
 
@@ -336,8 +336,6 @@ static int xdma_test(void)
 		printk("%d\t", xdma_addr[i]);
 	}
 	printk("\n");
-
-	return 0;
 }
 
 static long xdma_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
@@ -442,7 +440,7 @@ static long xdma_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			printk(KERN_INFO "<%s> ioctl: XDMA_TEST_TRANSFER\n",
 			       MODULE_NAME);
 
-			xdma_test();
+			xdma_test_transfer();
 			break;
 		}
 	default:
@@ -588,7 +586,7 @@ static int __init xdma_init(void)
 	}
 
 	xdma_probe();
-	xdma_test();
+	xdma_test_transfer();
 
 	return 0;
 }
