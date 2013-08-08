@@ -193,7 +193,7 @@ void xdma_prep_buffer(struct xdma_buf_info *buf_info)
 	}
 }
 
-void xdma_start_transfer(struct xdma_transfer *tx_info)
+void xdma_start_transfer(struct xdma_transfer *trans)
 {
 	unsigned long tmo = msecs_to_jiffies(3000);
 	enum dma_status status;
@@ -201,14 +201,14 @@ void xdma_start_transfer(struct xdma_transfer *tx_info)
 	struct completion *cmp;
 	dma_cookie_t cookie;
 
-	chan = (struct dma_chan *)tx_info->chan;
-	cmp = (struct completion *)tx_info->completion;
-	cookie = tx_info->cookie;
+	chan = (struct dma_chan *)trans->chan;
+	cmp = (struct completion *)trans->completion;
+	cookie = trans->cookie;
 
 	init_completion(cmp);
 	dma_async_issue_pending(chan);
 
-	if (tx_info->wait) {
+	if (trans->wait) {
 		tmo = wait_for_completion_timeout(cmp, tmo);
 		status = dma_async_is_tx_complete(chan, cookie, NULL, NULL);
 		if (0 == tmo) {
@@ -335,7 +335,7 @@ static long xdma_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	struct xdma_dev xdma_dev;
 	struct xdma_chan_cfg chan_cfg;
 	struct xdma_buf_info buf_info;
-	struct xdma_transfer tx_info;
+	struct xdma_transfer trans;
 	u32 devices;
 	u32 chan;
 
@@ -395,12 +395,12 @@ static long xdma_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		printk(KERN_INFO "<%s> ioctl: XDMA_START_TRANSFER\n",
 		       MODULE_NAME);
 
-		if (copy_from_user((void *)&tx_info,
+		if (copy_from_user((void *)&trans,
 				   (const void __user *)arg,
 				   sizeof(struct xdma_transfer)))
 			return -EFAULT;
 
-		xdma_start_transfer(&tx_info);
+		xdma_start_transfer(&trans);
 		break;
 	case XDMA_STOP_TRANSFER:
 		printk(KERN_INFO "<%s> ioctl: XDMA_STOP_TRANSFER\n",
