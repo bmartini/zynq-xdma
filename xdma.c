@@ -1,3 +1,6 @@
+/*
+ * Wrapper Driver used to control a two-channel Xilinx DMA Engine
+ */
 #include "xdma.h"
 
 #include <linux/module.h>
@@ -29,20 +32,20 @@ u32 num_devices;
 
 static int xdma_open(struct inode *i, struct file *f)
 {
-	printk(KERN_INFO "<%s> open()\n", MODULE_NAME);
+	printk(KERN_INFO "<%s> file: open()\n", MODULE_NAME);
 	return 0;
 }
 
 static int xdma_close(struct inode *i, struct file *f)
 {
-	printk(KERN_INFO "<%s> close()\n", MODULE_NAME);
+	printk(KERN_INFO "<%s> file: close()\n", MODULE_NAME);
 	return 0;
 }
 
 static ssize_t xdma_read(struct file *f, char __user * buf, size_t
 			 len, loff_t * off)
 {
-	printk(KERN_INFO "<%s> read()\n", MODULE_NAME);
+	printk(KERN_INFO "<%s> file: read()\n", MODULE_NAME);
 
 	return simple_read_from_buffer(buf, len, off, xdma_addr, BUFFER_LENGTH);
 }
@@ -50,7 +53,7 @@ static ssize_t xdma_read(struct file *f, char __user * buf, size_t
 static ssize_t xdma_write(struct file *f, const char __user * buf,
 			  size_t len, loff_t * off)
 {
-	printk(KERN_INFO "<%s> write()\n", MODULE_NAME);
+	printk(KERN_INFO "<%s> file: write()\n", MODULE_NAME);
 	if (len > (BUFFER_LENGTH - 1))
 		return -EINVAL;
 
@@ -65,8 +68,9 @@ static int xdma_mmap(struct file *filp, struct vm_area_struct *vma)
 	unsigned long requested_size;
 	requested_size = vma->vm_end - vma->vm_start;
 
-	printk(KERN_INFO "<%s> mmap...\n", MODULE_NAME);
-	printk(KERN_INFO "<%s> reserved: %d, requested: %lu\n",
+	printk(KERN_INFO "<%s> file: mmap()\n", MODULE_NAME);
+	printk(KERN_INFO
+	       "<%s> file: memory size reserved: %d, mmap size requested: %lu\n",
 	       MODULE_NAME, BUFFER_LENGTH, requested_size);
 
 	if (requested_size > BUFFER_LENGTH) {
@@ -89,8 +93,6 @@ static int xdma_mmap(struct file *filp, struct vm_area_struct *vma)
 		return -EAGAIN;
 	}
 
-	printk(KERN_INFO "<%s> mmap OK\n", MODULE_NAME);
-
 	return 0;
 }
 
@@ -111,22 +113,14 @@ enum dma_transfer_direction xdma_to_dma_direction(enum xdma_direction xdma_dir)
 
 	switch (xdma_dir) {
 	case XDMA_MEM_TO_DEV:
-		{
-			dma_dir = DMA_MEM_TO_DEV;
-			break;
-		}
-
+		dma_dir = DMA_MEM_TO_DEV;
+		break;
 	case XDMA_DEV_TO_MEM:
-		{
-			dma_dir = DMA_DEV_TO_MEM;
-			break;
-		}
-
+		dma_dir = DMA_DEV_TO_MEM;
+		break;
 	default:
-		{
-			dma_dir = DMA_TRANS_NONE;
-			break;
-		}
+		dma_dir = DMA_TRANS_NONE;
+		break;
 	}
 
 	return dma_dir;
@@ -157,7 +151,7 @@ void xdma_device_control(struct xdma_chan_cfg *chan_cfg)
 	}
 }
 
-void xdma_prep_slave_buf(struct xdma_buf_info *buf_info)
+void xdma_prep_buffer(struct xdma_buf_info *buf_info)
 {
 	struct dma_chan *chan;
 	dma_addr_t buf;
@@ -167,8 +161,6 @@ void xdma_prep_slave_buf(struct xdma_buf_info *buf_info)
 	struct dma_async_tx_descriptor *chan_desc;
 	struct completion *cmp;
 	dma_cookie_t cookie;
-
-	printk(KERN_INFO "<%s> ioctl: xdma prep slave buf\n", MODULE_NAME);
 
 	chan = (struct dma_chan *)buf_info->chan;
 	cmp = (struct completion *)buf_info->completion;
@@ -182,7 +174,7 @@ void xdma_prep_slave_buf(struct xdma_buf_info *buf_info)
 
 	if (!chan_desc) {
 		printk(KERN_ERR
-		       "<%s> ioctl: dmaengine_prep_slave_single error\n",
+		       "<%s> Error: dmaengine_prep_slave_single error\n",
 		       MODULE_NAME);
 
 		buf_info->cookie = (u32) NULL;
@@ -193,7 +185,7 @@ void xdma_prep_slave_buf(struct xdma_buf_info *buf_info)
 		// set the prepared descriptor to be executed by the engine
 		cookie = chan_desc->tx_submit(chan_desc);
 		if (dma_submit_error(cookie)) {
-			printk(KERN_ERR "<%s> ioctl: tx_submit error\n",
+			printk(KERN_ERR "<%s> Error: tx_submit error\n",
 			       MODULE_NAME);
 		}
 
@@ -201,7 +193,7 @@ void xdma_prep_slave_buf(struct xdma_buf_info *buf_info)
 	}
 }
 
-void xdma_start_transfer(struct xdma_transfer *tx_info)
+void xdma_start_transfer(struct xdma_transfer *trans)
 {
 	unsigned long tmo = msecs_to_jiffies(3000);
 	enum dma_status status;
@@ -209,22 +201,22 @@ void xdma_start_transfer(struct xdma_transfer *tx_info)
 	struct completion *cmp;
 	dma_cookie_t cookie;
 
-	chan = (struct dma_chan *)tx_info->chan;
-	cmp = (struct completion *)tx_info->completion;
-	cookie = tx_info->cookie;
+	chan = (struct dma_chan *)trans->chan;
+	cmp = (struct completion *)trans->completion;
+	cookie = trans->cookie;
 
 	init_completion(cmp);
 	dma_async_issue_pending(chan);
 
-	if (tx_info->wait) {
+	if (trans->wait) {
 		tmo = wait_for_completion_timeout(cmp, tmo);
 		status = dma_async_is_tx_complete(chan, cookie, NULL, NULL);
 		if (0 == tmo) {
-			printk(KERN_INFO "<%s> transfer timed out\n",
+			printk(KERN_ERR "<%s> Error: transfer timed out\n",
 			       MODULE_NAME);
 		} else if (status != DMA_SUCCESS) {
 			printk(KERN_INFO
-			       "<%s> transfer returned completion callback of status \'%s\'\n",
+			       "<%s> transfer: returned completion callback status of: \'%s\'\n",
 			       MODULE_NAME,
 			       status == DMA_ERROR ? "error" : "in progress");
 		}
@@ -242,7 +234,7 @@ void xdma_stop_transfer(struct dma_chan *chan)
 	}
 }
 
-static int xdma_test(void)
+void xdma_test_transfer(void)
 {
 	const int LENGTH = 1048576;	// max image is 1024x1024 for now!
 
@@ -264,15 +256,15 @@ static int xdma_test(void)
 	memset(xdma_addr + LENGTH, 'Z', LENGTH);	// fill tx with a value
 	xdma_addr[LENGTH + LENGTH - 1] = '\n';
 
-	// test before transfer:
+	// display contents before transfer:
 	printk(KERN_INFO "<%s> test: rx buffer before transmit:\n",
 	       MODULE_NAME);
 	for (i = 0; i < 10; i++) {
-		printk("%d\t", xdma_addr[i]);
+		printk("%c\t", xdma_addr[i]);
 	}
 	printk("\n");
 
-	//measure time:
+	// measure time:
 	do_gettimeofday(&ti);
 
 	rx_config.chan = xdma_dev_info[0]->rx_chan;
@@ -290,14 +282,14 @@ static int xdma_test(void)
 	rx_buf.buf_size = (u32) LENGTH;
 	rx_buf.dir = XDMA_DEV_TO_MEM;
 	rx_buf.completion = (u32) xdma_dev_info[0]->rx_cmp;
-	xdma_prep_slave_buf(&rx_buf);
+	xdma_prep_buffer(&rx_buf);
 
 	tx_buf.chan = xdma_dev_info[0]->tx_chan;
 	tx_buf.buf_offset = (u32) LENGTH;
 	tx_buf.buf_size = (u32) LENGTH;
 	tx_buf.dir = XDMA_MEM_TO_DEV;
 	tx_buf.completion = (u32) xdma_dev_info[0]->tx_cmp;
-	xdma_prep_slave_buf(&tx_buf);
+	xdma_prep_buffer(&tx_buf);
 
 	printk(KERN_INFO "<%s> test: xdma_start_transfer rx\n", MODULE_NAME);
 	rx_trans.chan = xdma_dev_info[0]->rx_chan;
@@ -311,7 +303,7 @@ static int xdma_test(void)
 	tx_trans.completion = (u32) xdma_dev_info[0]->tx_cmp;
 	tx_trans.cookie = tx_buf.cookie;
 
-	//measure time to prepare channels:
+	// measure time to prepare channels:
 	do_gettimeofday(&tf);
 	printk(KERN_INFO "<%s> test: time to prepare DMA channels [us]: %ld\n",
 	       MODULE_NAME, (tf.tv_usec - ti.tv_usec));
@@ -321,7 +313,7 @@ static int xdma_test(void)
 	xdma_start_transfer(&rx_trans);
 	xdma_start_transfer(&tx_trans);
 
-	//measure time:
+	// measure time:
 	do_gettimeofday(&tf);
 	printk(KERN_INFO "<%s> test: DMA transfer time [us]: %ld\n",
 	       MODULE_NAME, (tf.tv_usec - ti.tv_usec));
@@ -330,14 +322,12 @@ static int xdma_test(void)
 	printk(KERN_INFO "<%s> test: DMA speed in Mbytes/s: %ld\n", MODULE_NAME,
 	       LENGTH / (tf.tv_usec - ti.tv_usec));
 
-	// test after transfer:
+	// display contents after transfer:
 	printk(KERN_INFO "<%s> test: rx buffer after transmit:\n", MODULE_NAME);
 	for (i = 0; i < 10; i++) {
-		printk("%d\t", xdma_addr[i]);
+		printk("%c\t", xdma_addr[i]);
 	}
 	printk("\n");
-
-	return 0;
 }
 
 static long xdma_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
@@ -345,106 +335,89 @@ static long xdma_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	struct xdma_dev xdma_dev;
 	struct xdma_chan_cfg chan_cfg;
 	struct xdma_buf_info buf_info;
-	struct xdma_transfer tx_info;
+	struct xdma_transfer trans;
 	u32 devices;
 	u32 chan;
 
 	switch (cmd) {
 	case XDMA_GET_NUM_DEVICES:
-		{
-			printk(KERN_INFO "<%s> ioctl: XDMA_GET_NUM_DEVICES\n",
-			       MODULE_NAME);
+		printk(KERN_INFO "<%s> ioctl: XDMA_GET_NUM_DEVICES\n",
+		       MODULE_NAME);
 
-			devices = num_devices;
-			if (copy_to_user((u32 *) arg, &devices, sizeof(u32)))
-				return -EFAULT;
+		devices = num_devices;
+		if (copy_to_user((u32 *) arg, &devices, sizeof(u32)))
+			return -EFAULT;
 
-			break;
-		}
+		break;
 	case XDMA_GET_DEV_INFO:
-		{
-			printk(KERN_INFO "<%s> ioctl: XDMA_GET_DEV_INFO\n",
-			       MODULE_NAME);
+		printk(KERN_INFO "<%s> ioctl: XDMA_GET_DEV_INFO\n",
+		       MODULE_NAME);
 
-			if (copy_from_user((void *)&xdma_dev,
-					   (const void __user *)arg,
-					   sizeof(struct xdma_dev)))
-				return -EFAULT;
+		if (copy_from_user((void *)&xdma_dev,
+				   (const void __user *)arg,
+				   sizeof(struct xdma_dev)))
+			return -EFAULT;
 
-			xdma_get_dev_info(xdma_dev.device_id, &xdma_dev);
+		xdma_get_dev_info(xdma_dev.device_id, &xdma_dev);
 
-			if (copy_to_user((struct xdma_dev *)arg,
-					 &xdma_dev, sizeof(struct xdma_dev)))
-				return -EFAULT;
+		if (copy_to_user((struct xdma_dev *)arg,
+				 &xdma_dev, sizeof(struct xdma_dev)))
+			return -EFAULT;
 
-			break;
-		}
+		break;
 	case XDMA_DEVICE_CONTROL:
-		{
-			printk(KERN_INFO "<%s> ioctl: XDMA_DEVICE_CONTROL\n",
-			       MODULE_NAME);
+		printk(KERN_INFO "<%s> ioctl: XDMA_DEVICE_CONTROL\n",
+		       MODULE_NAME);
 
-			if (copy_from_user((void *)&chan_cfg,
-					   (const void __user *)arg,
-					   sizeof(struct xdma_chan_cfg)))
-				return -EFAULT;
+		if (copy_from_user((void *)&chan_cfg,
+				   (const void __user *)arg,
+				   sizeof(struct xdma_chan_cfg)))
+			return -EFAULT;
 
-			xdma_device_control(&chan_cfg);
-			break;
-		}
+		xdma_device_control(&chan_cfg);
+		break;
 	case XDMA_PREP_BUF:
-		{
-			printk(KERN_INFO "<%s> ioctl: XDMA_PREP_BUF\n",
-			       MODULE_NAME);
+		printk(KERN_INFO "<%s> ioctl: XDMA_PREP_BUF\n", MODULE_NAME);
 
-			if (copy_from_user((void *)&buf_info,
-					   (const void __user *)arg,
-					   sizeof(struct xdma_buf_info)))
-				return -EFAULT;
+		if (copy_from_user((void *)&buf_info,
+				   (const void __user *)arg,
+				   sizeof(struct xdma_buf_info)))
+			return -EFAULT;
 
-			xdma_prep_slave_buf(&buf_info);
+		xdma_prep_buffer(&buf_info);
 
-			if (copy_to_user((struct xdma_buf_info *)arg,
-					 &buf_info,
-					 sizeof(struct xdma_buf_info)))
-				return -EFAULT;
+		if (copy_to_user((struct xdma_buf_info *)arg,
+				 &buf_info, sizeof(struct xdma_buf_info)))
+			return -EFAULT;
 
-			break;
-		}
+		break;
 	case XDMA_START_TRANSFER:
-		{
-			printk(KERN_INFO "<%s> ioctl: XDMA_START_TRANSFER\n",
-			       MODULE_NAME);
+		printk(KERN_INFO "<%s> ioctl: XDMA_START_TRANSFER\n",
+		       MODULE_NAME);
 
-			if (copy_from_user((void *)&tx_info,
-					   (const void __user *)arg,
-					   sizeof(struct xdma_transfer)))
-				return -EFAULT;
+		if (copy_from_user((void *)&trans,
+				   (const void __user *)arg,
+				   sizeof(struct xdma_transfer)))
+			return -EFAULT;
 
-			xdma_start_transfer(&tx_info);
-			break;
-		}
+		xdma_start_transfer(&trans);
+		break;
 	case XDMA_STOP_TRANSFER:
-		{
-			printk(KERN_INFO "<%s> ioctl: XDMA_STOP_TRANSFER\n",
-			       MODULE_NAME);
+		printk(KERN_INFO "<%s> ioctl: XDMA_STOP_TRANSFER\n",
+		       MODULE_NAME);
 
-			if (copy_from_user((void *)&chan,
-					   (const void __user *)arg,
-					   sizeof(u32)))
-				return -EFAULT;
+		if (copy_from_user((void *)&chan,
+				   (const void __user *)arg, sizeof(u32)))
+			return -EFAULT;
 
-			xdma_stop_transfer((struct dma_chan *)chan);
-			break;
-		}
+		xdma_stop_transfer((struct dma_chan *)chan);
+		break;
 	case XDMA_TEST_TRANSFER:
-		{
-			printk(KERN_INFO "<%s> ioctl: XDMA_TEST_TRANSFER\n",
-			       MODULE_NAME);
+		printk(KERN_INFO "<%s> ioctl: XDMA_TEST_TRANSFER\n",
+		       MODULE_NAME);
 
-			xdma_test();
-			break;
-		}
+		xdma_test_transfer();
+		break;
 	default:
 		break;
 	}
@@ -512,13 +485,11 @@ void xdma_probe(void)
 					      (void *)&match_rx);
 
 		if (!tx_chan && !rx_chan) {
-			printk(KERN_INFO "<%s> break probe loop\n",
-			       MODULE_NAME);
+			printk(KERN_INFO
+			       "<%s> probe: number of devices found: %d\n",
+			       MODULE_NAME, num_devices);
 			break;
 		} else {
-			printk(KERN_INFO "<%s> tx & rx chan found\n",
-			       MODULE_NAME);
-
 			xdma_add_dev_info(tx_chan, rx_chan);
 		}
 	}
@@ -554,8 +525,8 @@ static int __init xdma_init(void)
 {
 	num_devices = 0;
 
-	/* device onstructor */
-	printk(KERN_INFO "<%s> registered\n", MODULE_NAME);
+	/* device constructor */
+	printk(KERN_INFO "<%s> init: registered\n", MODULE_NAME);
 	if (alloc_chrdev_region(&dev_num, 0, 1, MODULE_NAME) < 0) {
 		return -1;
 	}
@@ -587,8 +558,9 @@ static int __init xdma_init(void)
 		return -ENOMEM;
 	}
 
+	/* hardware setup */
 	xdma_probe();
-	xdma_test();
+	xdma_test_transfer();
 
 	return 0;
 }
@@ -600,8 +572,9 @@ static void __exit xdma_exit(void)
 	device_destroy(cl, dev_num);
 	class_destroy(cl);
 	unregister_chrdev_region(dev_num, 1);
-	printk(KERN_INFO "<%s> unregistered\n", MODULE_NAME);
+	printk(KERN_INFO "<%s> exit: unregistered\n", MODULE_NAME);
 
+	/* hardware shutdown */
 	xdma_remove();
 
 	/* free mmap area */
@@ -613,4 +586,4 @@ static void __exit xdma_exit(void)
 module_init(xdma_init);
 module_exit(xdma_exit);
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("MMAP Character Driver and Xilinx DMA");
+MODULE_DESCRIPTION("Wrapper Driver For A Xilinx DMA Engine");
