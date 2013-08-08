@@ -76,6 +76,7 @@ static int xdma_mmap(struct file *filp, struct vm_area_struct *vma)
 		return -EAGAIN;
 	}
 
+	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
 	result = remap_pfn_range(vma, vma->vm_start,
 				 virt_to_pfn(xdma_addr),
 				 requested_size, vma->vm_page_prot);
@@ -243,7 +244,7 @@ void xdma_stop_transfer(struct dma_chan *chan)
 
 static int xdma_test(void)
 {
-	const int LENGTH = 1024;
+	const int LENGTH = 1048576; // max image is 1024x1024 for now!
 
 	int i;
 
@@ -255,6 +256,8 @@ static int xdma_test(void)
 
 	struct xdma_transfer rx_trans;
 	struct xdma_transfer tx_trans;
+	
+	struct timeval ti,tf;
 
 	memset(xdma_addr, 'Y', LENGTH);	// fill rx with a value
 	xdma_addr[LENGTH - 1] = '\n';
@@ -268,6 +271,9 @@ static int xdma_test(void)
 		printk("%d\t", xdma_addr[i]);
 	}
 	printk("\n");
+	
+	//measure time:
+   do_gettimeofday(&ti);
 
 	rx_config.chan = xdma_dev_info[0]->rx_chan;
 	rx_config.coalesc = 1;
@@ -298,14 +304,31 @@ static int xdma_test(void)
 	rx_trans.wait = 0;
 	rx_trans.completion = (u32) xdma_dev_info[0]->rx_cmp;
 	rx_trans.cookie = rx_buf.cookie;
-	xdma_start_transfer(&rx_trans);
-
+	
 	printk(KERN_INFO "<%s> test: xdma_start_transfer tx\n", MODULE_NAME);
 	tx_trans.chan = xdma_dev_info[0]->tx_chan;
 	tx_trans.wait = 1;
 	tx_trans.completion = (u32) xdma_dev_info[0]->tx_cmp;
 	tx_trans.cookie = tx_buf.cookie;
+	
+	//measure time to prepare channels:
+   do_gettimeofday(&tf);
+   printk(KERN_INFO "<%s> Time to prepare DMA channels [us]: %ld\n", 
+         MODULE_NAME, (tf.tv_usec - ti.tv_usec));
+	do_gettimeofday(&ti); // to read transfer time only
+	
+	// start transfer:
+	xdma_start_transfer(&rx_trans);
 	xdma_start_transfer(&tx_trans);
+	
+	
+	//measure time:
+   do_gettimeofday(&tf);
+   printk(KERN_INFO "<%s> Transfer time [us]: %ld\n", MODULE_NAME, 
+         (tf.tv_usec - ti.tv_usec));
+   printk(KERN_INFO "<%s> bytes sent: %d\n", MODULE_NAME, LENGTH);
+   printk(KERN_INFO "<%s> Mbytes/s: %ld\n", MODULE_NAME, 
+         LENGTH/(tf.tv_usec - ti.tv_usec));
 
 	// test after transfer:
 	printk(KERN_INFO "<%s> test: rx buffer after transmit:\n", MODULE_NAME);
