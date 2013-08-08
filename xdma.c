@@ -111,22 +111,14 @@ enum dma_transfer_direction xdma_to_dma_direction(enum xdma_direction xdma_dir)
 
 	switch (xdma_dir) {
 	case XDMA_MEM_TO_DEV:
-		{
 			dma_dir = DMA_MEM_TO_DEV;
 			break;
-		}
-
 	case XDMA_DEV_TO_MEM:
-		{
 			dma_dir = DMA_DEV_TO_MEM;
 			break;
-		}
-
 	default:
-		{
 			dma_dir = DMA_TRANS_NONE;
 			break;
-		}
 	}
 
 	return dma_dir;
@@ -349,7 +341,6 @@ static long xdma_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	switch (cmd) {
 	case XDMA_GET_NUM_DEVICES:
-		{
 			printk(KERN_INFO "<%s> ioctl: XDMA_GET_NUM_DEVICES\n",
 			       MODULE_NAME);
 
@@ -358,9 +349,7 @@ static long xdma_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				return -EFAULT;
 
 			break;
-		}
 	case XDMA_GET_DEV_INFO:
-		{
 			printk(KERN_INFO "<%s> ioctl: XDMA_GET_DEV_INFO\n",
 			       MODULE_NAME);
 
@@ -376,9 +365,7 @@ static long xdma_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				return -EFAULT;
 
 			break;
-		}
 	case XDMA_DEVICE_CONTROL:
-		{
 			printk(KERN_INFO "<%s> ioctl: XDMA_DEVICE_CONTROL\n",
 			       MODULE_NAME);
 
@@ -389,9 +376,7 @@ static long xdma_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 			xdma_device_control(&chan_cfg);
 			break;
-		}
 	case XDMA_PREP_BUF:
-		{
 			printk(KERN_INFO "<%s> ioctl: XDMA_PREP_BUF\n",
 			       MODULE_NAME);
 
@@ -408,9 +393,7 @@ static long xdma_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				return -EFAULT;
 
 			break;
-		}
 	case XDMA_START_TRANSFER:
-		{
 			printk(KERN_INFO "<%s> ioctl: XDMA_START_TRANSFER\n",
 			       MODULE_NAME);
 
@@ -421,9 +404,7 @@ static long xdma_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 			xdma_start_transfer(&tx_info);
 			break;
-		}
 	case XDMA_STOP_TRANSFER:
-		{
 			printk(KERN_INFO "<%s> ioctl: XDMA_STOP_TRANSFER\n",
 			       MODULE_NAME);
 
@@ -434,15 +415,12 @@ static long xdma_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 			xdma_stop_transfer((struct dma_chan *)chan);
 			break;
-		}
 	case XDMA_TEST_TRANSFER:
-		{
 			printk(KERN_INFO "<%s> ioctl: XDMA_TEST_TRANSFER\n",
 			       MODULE_NAME);
 
 			xdma_test_transfer();
 			break;
-		}
 	default:
 		break;
 	}
