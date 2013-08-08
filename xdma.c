@@ -149,7 +149,7 @@ void xdma_device_control(struct xdma_chan_cfg *chan_cfg)
 	}
 }
 
-void xdma_prep_slave_buf(struct xdma_buf_info *buf_info)
+void xdma_prep_buffer(struct xdma_buf_info *buf_info)
 {
 	struct dma_chan *chan;
 	dma_addr_t buf;
@@ -160,7 +160,7 @@ void xdma_prep_slave_buf(struct xdma_buf_info *buf_info)
 	struct completion *cmp;
 	dma_cookie_t cookie;
 
-	printk(KERN_INFO "<%s> ioctl: xdma prep slave buf\n", MODULE_NAME);
+	printk(KERN_INFO "<%s> ioctl: xdma prep buffer\n", MODULE_NAME);
 
 	chan = (struct dma_chan *)buf_info->chan;
 	cmp = (struct completion *)buf_info->completion;
@@ -282,14 +282,14 @@ void xdma_test_transfer(void)
 	rx_buf.buf_size = (u32) LENGTH;
 	rx_buf.dir = XDMA_DEV_TO_MEM;
 	rx_buf.completion = (u32) xdma_dev_info[0]->rx_cmp;
-	xdma_prep_slave_buf(&rx_buf);
+	xdma_prep_buffer(&rx_buf);
 
 	tx_buf.chan = xdma_dev_info[0]->tx_chan;
 	tx_buf.buf_offset = (u32) LENGTH;
 	tx_buf.buf_size = (u32) LENGTH;
 	tx_buf.dir = XDMA_MEM_TO_DEV;
 	tx_buf.completion = (u32) xdma_dev_info[0]->tx_cmp;
-	xdma_prep_slave_buf(&tx_buf);
+	xdma_prep_buffer(&tx_buf);
 
 	printk(KERN_INFO "<%s> test: xdma_start_transfer rx\n", MODULE_NAME);
 	rx_trans.chan = xdma_dev_info[0]->rx_chan;
@@ -384,7 +384,7 @@ static long xdma_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				   sizeof(struct xdma_buf_info)))
 			return -EFAULT;
 
-		xdma_prep_slave_buf(&buf_info);
+		xdma_prep_buffer(&buf_info);
 
 		if (copy_to_user((struct xdma_buf_info *)arg,
 				 &buf_info, sizeof(struct xdma_buf_info)))
