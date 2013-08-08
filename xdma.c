@@ -111,14 +111,14 @@ enum dma_transfer_direction xdma_to_dma_direction(enum xdma_direction xdma_dir)
 
 	switch (xdma_dir) {
 	case XDMA_MEM_TO_DEV:
-			dma_dir = DMA_MEM_TO_DEV;
-			break;
+		dma_dir = DMA_MEM_TO_DEV;
+		break;
 	case XDMA_DEV_TO_MEM:
-			dma_dir = DMA_DEV_TO_MEM;
-			break;
+		dma_dir = DMA_DEV_TO_MEM;
+		break;
 	default:
-			dma_dir = DMA_TRANS_NONE;
-			break;
+		dma_dir = DMA_TRANS_NONE;
+		break;
 	}
 
 	return dma_dir;
@@ -341,86 +341,83 @@ static long xdma_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	switch (cmd) {
 	case XDMA_GET_NUM_DEVICES:
-			printk(KERN_INFO "<%s> ioctl: XDMA_GET_NUM_DEVICES\n",
-			       MODULE_NAME);
+		printk(KERN_INFO "<%s> ioctl: XDMA_GET_NUM_DEVICES\n",
+		       MODULE_NAME);
 
-			devices = num_devices;
-			if (copy_to_user((u32 *) arg, &devices, sizeof(u32)))
-				return -EFAULT;
+		devices = num_devices;
+		if (copy_to_user((u32 *) arg, &devices, sizeof(u32)))
+			return -EFAULT;
 
-			break;
+		break;
 	case XDMA_GET_DEV_INFO:
-			printk(KERN_INFO "<%s> ioctl: XDMA_GET_DEV_INFO\n",
-			       MODULE_NAME);
+		printk(KERN_INFO "<%s> ioctl: XDMA_GET_DEV_INFO\n",
+		       MODULE_NAME);
 
-			if (copy_from_user((void *)&xdma_dev,
-					   (const void __user *)arg,
-					   sizeof(struct xdma_dev)))
-				return -EFAULT;
+		if (copy_from_user((void *)&xdma_dev,
+				   (const void __user *)arg,
+				   sizeof(struct xdma_dev)))
+			return -EFAULT;
 
-			xdma_get_dev_info(xdma_dev.device_id, &xdma_dev);
+		xdma_get_dev_info(xdma_dev.device_id, &xdma_dev);
 
-			if (copy_to_user((struct xdma_dev *)arg,
-					 &xdma_dev, sizeof(struct xdma_dev)))
-				return -EFAULT;
+		if (copy_to_user((struct xdma_dev *)arg,
+				 &xdma_dev, sizeof(struct xdma_dev)))
+			return -EFAULT;
 
-			break;
+		break;
 	case XDMA_DEVICE_CONTROL:
-			printk(KERN_INFO "<%s> ioctl: XDMA_DEVICE_CONTROL\n",
-			       MODULE_NAME);
+		printk(KERN_INFO "<%s> ioctl: XDMA_DEVICE_CONTROL\n",
+		       MODULE_NAME);
 
-			if (copy_from_user((void *)&chan_cfg,
-					   (const void __user *)arg,
-					   sizeof(struct xdma_chan_cfg)))
-				return -EFAULT;
+		if (copy_from_user((void *)&chan_cfg,
+				   (const void __user *)arg,
+				   sizeof(struct xdma_chan_cfg)))
+			return -EFAULT;
 
-			xdma_device_control(&chan_cfg);
-			break;
+		xdma_device_control(&chan_cfg);
+		break;
 	case XDMA_PREP_BUF:
-			printk(KERN_INFO "<%s> ioctl: XDMA_PREP_BUF\n",
-			       MODULE_NAME);
+		printk(KERN_INFO "<%s> ioctl: XDMA_PREP_BUF\n", MODULE_NAME);
 
-			if (copy_from_user((void *)&buf_info,
-					   (const void __user *)arg,
-					   sizeof(struct xdma_buf_info)))
-				return -EFAULT;
+		if (copy_from_user((void *)&buf_info,
+				   (const void __user *)arg,
+				   sizeof(struct xdma_buf_info)))
+			return -EFAULT;
 
-			xdma_prep_slave_buf(&buf_info);
+		xdma_prep_slave_buf(&buf_info);
 
-			if (copy_to_user((struct xdma_buf_info *)arg,
-					 &buf_info,
-					 sizeof(struct xdma_buf_info)))
-				return -EFAULT;
+		if (copy_to_user((struct xdma_buf_info *)arg,
+				 &buf_info, sizeof(struct xdma_buf_info)))
+			return -EFAULT;
 
-			break;
+		break;
 	case XDMA_START_TRANSFER:
-			printk(KERN_INFO "<%s> ioctl: XDMA_START_TRANSFER\n",
-			       MODULE_NAME);
+		printk(KERN_INFO "<%s> ioctl: XDMA_START_TRANSFER\n",
+		       MODULE_NAME);
 
-			if (copy_from_user((void *)&tx_info,
-					   (const void __user *)arg,
-					   sizeof(struct xdma_transfer)))
-				return -EFAULT;
+		if (copy_from_user((void *)&tx_info,
+				   (const void __user *)arg,
+				   sizeof(struct xdma_transfer)))
+			return -EFAULT;
 
-			xdma_start_transfer(&tx_info);
-			break;
+		xdma_start_transfer(&tx_info);
+		break;
 	case XDMA_STOP_TRANSFER:
-			printk(KERN_INFO "<%s> ioctl: XDMA_STOP_TRANSFER\n",
-			       MODULE_NAME);
+		printk(KERN_INFO "<%s> ioctl: XDMA_STOP_TRANSFER\n",
+		       MODULE_NAME);
 
-			if (copy_from_user((void *)&chan,
-					   (const void __user *)arg,
-					   sizeof(u32)))
-				return -EFAULT;
+		if (copy_from_user((void *)&chan,
+				   (const void __user *)arg, sizeof(u32)))
+			return -EFAULT;
 
-			xdma_stop_transfer((struct dma_chan *)chan);
-			break;
+		xdma_stop_transfer((struct dma_chan *)chan);
+		break;
 	case XDMA_TEST_TRANSFER:
-			printk(KERN_INFO "<%s> ioctl: XDMA_TEST_TRANSFER\n",
-			       MODULE_NAME);
+		printk(KERN_INFO "<%s> ioctl: XDMA_TEST_TRANSFER\n",
+		       MODULE_NAME);
 
-			xdma_test_transfer();
-			break;
+		xdma_test_transfer();
+		break;
 	default:
 		break;
 	}
