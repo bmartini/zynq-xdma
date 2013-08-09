@@ -47,14 +47,14 @@ static ssize_t xdma_read(struct file *f, char __user * buf, size_t
 {
 	printk(KERN_INFO "<%s> file: read()\n", MODULE_NAME);
 
-	return simple_read_from_buffer(buf, len, off, xdma_addr, BUFFER_LENGTH);
+	return simple_read_from_buffer(buf, len, off, xdma_addr, DMA_LENGTH);
 }
 
 static ssize_t xdma_write(struct file *f, const char __user * buf,
 			  size_t len, loff_t * off)
 {
 	printk(KERN_INFO "<%s> file: write()\n", MODULE_NAME);
-	if (len > (BUFFER_LENGTH - 1))
+	if (len > (DMA_LENGTH - 1))
 		return -EINVAL;
 
 	copy_from_user(xdma_addr, buf, len);
@@ -71,11 +71,11 @@ static int xdma_mmap(struct file *filp, struct vm_area_struct *vma)
 	printk(KERN_INFO "<%s> file: mmap()\n", MODULE_NAME);
 	printk(KERN_INFO
 	       "<%s> file: memory size reserved: %d, mmap size requested: %lu\n",
-	       MODULE_NAME, BUFFER_LENGTH, requested_size);
+	       MODULE_NAME, DMA_LENGTH, requested_size);
 
-	if (requested_size > BUFFER_LENGTH) {
+	if (requested_size > DMA_LENGTH) {
 		printk(KERN_ERR "<%s> Error: %d reserved != %lu requested)\n",
-		       MODULE_NAME, BUFFER_LENGTH, requested_size);
+		       MODULE_NAME, DMA_LENGTH, requested_size);
 
 		return -EAGAIN;
 	}
@@ -549,7 +549,7 @@ static int __init xdma_init(void)
 
 	/* allocate mmap area */
 	xdma_addr =
-	    dma_zalloc_coherent(NULL, BUFFER_LENGTH, &xdma_handle, GFP_KERNEL);
+	    dma_zalloc_coherent(NULL, DMA_LENGTH, &xdma_handle, GFP_KERNEL);
 
 	if (!xdma_addr) {
 		printk(KERN_ERR "<%s> Error: allocating dma memory failed\n",
@@ -578,7 +578,7 @@ static void __exit xdma_exit(void)
 
 	/* free mmap area */
 	if (xdma_addr) {
-		dma_free_coherent(NULL, BUFFER_LENGTH, xdma_addr, xdma_handle);
+		dma_free_coherent(NULL, DMA_LENGTH, xdma_addr, xdma_handle);
 	}
 }
 

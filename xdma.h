@@ -9,7 +9,7 @@ extern "C" {
 #include <asm/ioctl.h>
 
 #define MODULE_NAME	"xdma"
-#define BUFFER_LENGTH	(32*1024*1024)
+#define DMA_LENGTH	(32*1024*1024)
 #define MAX_DEVICES     4
 
 #define XDMA_IOCTL_BASE	'W'
