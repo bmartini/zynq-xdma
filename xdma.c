@@ -560,7 +560,6 @@ static int __init xdma_init(void)
 
 	/* hardware setup */
 	xdma_probe();
-	xdma_test_transfer();
 
 	return 0;
 }
