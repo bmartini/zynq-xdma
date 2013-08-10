@@ -39,10 +39,23 @@ make KDIR=../../linux-xlnx
 
 ## Inserting Module
 
-To use the driver module it first needs to be inserted into the Linux kernel.
+Use of the driver module requires it to be inserted into the running Linux
+kernel. Once inserted it will automatically create a character device file in
+'/dev' called '/dev/xdma'. However, the default permissions will not allow
+non-root users to read/write to the file. These permissions can be overridden
+by installing the udev rule file found in this projects 'util' directory into
+the systems '/etc/udev/rules.d/' directory. Alternatively, once the modules
+inserted the permissions can be changed manually using 'chmod'.
 
 ```bash
-sudo insmod xdma.ko && sudo chmod 777 /dev/xdma
+sudo cp util/80-xdma.rules /etc/udev/rules.d/
+sudo insmod dev/xdma.ko
+```
+
+or
+
+```bash
+sudo insmod xdma.ko && sudo chmod 666 /dev/xdma
 ```
 
 To remove the module.
