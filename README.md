@@ -16,12 +16,24 @@ inserted in. It is recommended to uses the Linux kernel maintained by Xilinx.
 git clone https://github.com/Xilinx/linux-xlnx.git
 ```
 
-Place the driver directory into the kernel directory 'linux-xlnx/drivers/dma'.
-Then, to compile, 'cd' into the driver directory and run 'make'.
+The driver module can be compiling outside of the Linux kernel source tree. A
+variable 'KDIR' in the Makefile is used to point to the kernel source
+directory. The default value has it pointing to the default Linux install
+location for kernel sources. However, if cross compiling or if the sources are
+in a non-default location the value can be overridden using an exported
+environmental variable or as an argument passes into the make command.
 
 ```bash
-cd linux-xlnx/drivers/dma/zynq-xdma/
+cd zynq-xdma/dev/
+export KDIR=../../linux-xlnx
 make
+```
+
+or
+
+```bash
+cd zynq-xdma/dev/
+make KDIR=../../linux-xlnx
 ```
 
 
