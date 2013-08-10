@@ -1,7 +1,9 @@
-obj-m += xdma.o
+export
 
 all:
-	make -C ../../.. M=$(PWD) modules
+	make -C dev
+	make -C demo
 
 clean:
-	make -C ../../.. M=$(PWD) clean
+	make -C dev clean
+	make -C demo clean
