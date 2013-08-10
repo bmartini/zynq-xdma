@@ -68,8 +68,9 @@ sudo rmmod xdma
 ## Compiling and Running Demo
 
 The demo application assumes that you have the Zynq PL configured as a DMA
-loopback device.
+loopback device and that it is being compiled on the Zedboard.
 
 ```bash
-gcc -Wall xdma-demo.c -o demo && ./demo
+cd demo
+make
 ```
