@@ -171,13 +171,13 @@ int main(int argc, char *argv[])
 	}
 	printf("config rx chans\n");
 
-	struct xdma_chan_cfg tx_config;
-	tx_config.chan = dev.tx_chan;
-	tx_config.dir = XDMA_MEM_TO_DEV;
-	tx_config.coalesc = 1;
-	tx_config.delay = 0;
-	tx_config.reset = 0;
-	if (ioctl(fd, XDMA_DEVICE_CONTROL, &tx_config) < 0) {
+	struct xdma_chan_cfg src_config;
+	src_config.chan = dev.tx_chan;
+	src_config.dir = XDMA_MEM_TO_DEV;
+	src_config.coalesc = 1;
+	src_config.delay = 0;
+	src_config.reset = 0;
+	if (ioctl(fd, XDMA_DEVICE_CONTROL, &src_config) < 0) {
 		perror("Error ioctl config tx chan");
 		exit(EXIT_FAILURE);
 	}
@@ -197,14 +197,14 @@ int main(int argc, char *argv[])
 	}
 	printf("config rx buffer\n");
 
-	struct xdma_buf_info tx_buf;
-	tx_buf.chan = dev.tx_chan;
-	tx_buf.completion = dev.tx_cmp;
-	tx_buf.cookie = (u32) NULL;
-	tx_buf.buf_offset = (u32) xdma_calc_offset(src);
-	tx_buf.buf_size = (u32) xdma_calc_size(LENGTH, sizeof(src[0]));
-	tx_buf.dir = XDMA_MEM_TO_DEV;
-	if (ioctl(fd, XDMA_PREP_BUF, &tx_buf) < 0) {
+	struct xdma_buf_info src_buf;
+	src_buf.chan = dev.tx_chan;
+	src_buf.completion = dev.tx_cmp;
+	src_buf.cookie = (u32) NULL;
+	src_buf.buf_offset = (u32) xdma_calc_offset(src);
+	src_buf.buf_size = (u32) xdma_calc_size(LENGTH, sizeof(src[0]));
+	src_buf.dir = XDMA_MEM_TO_DEV;
+	if (ioctl(fd, XDMA_PREP_BUF, &src_buf) < 0) {
 		perror("Error ioctl set tx buf");
 		exit(EXIT_FAILURE);
 	}
@@ -221,12 +221,12 @@ int main(int argc, char *argv[])
 	}
 	printf("config rx trans\n");
 
-	struct xdma_transfer tx_trans;
-	tx_trans.chan = dev.tx_chan;
-	tx_trans.completion = dev.tx_cmp;
-	tx_trans.cookie = tx_buf.cookie;
-	tx_trans.wait = 0;
-	if (ioctl(fd, XDMA_START_TRANSFER, &tx_trans) < 0) {
+	struct xdma_transfer src_trans;
+	src_trans.chan = dev.tx_chan;
+	src_trans.completion = dev.tx_cmp;
+	src_trans.cookie = src_buf.cookie;
+	src_trans.wait = 0;
+	if (ioctl(fd, XDMA_START_TRANSFER, &src_trans) < 0) {
 		perror("Error ioctl start tx trans");
 		exit(EXIT_FAILURE);
 	}
