@@ -17,6 +17,7 @@
 #define FILESIZE (MAP_SIZE * sizeof(char))
 
 uint32_t alloc_offset;
+int fd;
 uint8_t *map;		/* mmapped array of char's */
 
 
@@ -47,7 +48,7 @@ uint32_t xdma_calc_size(int length, int byte_num)
 	return length;
 }
 
-
+// Static allocator
 void *xdma_alloc(int length, int byte_num)
 {
 	void *array = &map[alloc_offset];
@@ -57,19 +58,9 @@ void *xdma_alloc(int length, int byte_num)
 	return array;
 }
 
-int main(int argc, char *argv[])
+void xdma_init()
 {
-	const int LENGTH = 1025;
-	int i;
-	int fd;
-	uint32_t *src;
-	uint32_t *dst;
-
 	/* Open a file for writing.
-	 *  - Creating the file if it doesn't exist.
-	 *  - Truncating it to 0 size if it already exists. (not really needed)
-	 *
-	 * Note: "O_WRONLY" mode is not sufficient when mmaping.
 	 */
 	fd = open(FILEPATH, O_RDWR | O_CREAT | O_TRUNC, (mode_t) 0600);
 	if (fd == -1) {
@@ -87,6 +78,31 @@ int main(int argc, char *argv[])
 	}
 
 	alloc_offset = 0;
+}
+
+void xdma_exit()
+{
+
+	/* Don't forget to free the mmapped memory
+	 */
+	if (munmap(map, FILESIZE) == -1) {
+		perror("Error un-mmapping the file");
+		exit(EXIT_FAILURE);
+	}
+
+	/* Un-mmaping doesn't close the file.
+	 */
+	close(fd);
+}
+
+int main(int argc, char *argv[])
+{
+	const int LENGTH = 1025;
+	int i;
+	uint32_t *src;
+	uint32_t *dst;
+
+	xdma_init();
 
 	dst = (uint32_t *) xdma_alloc(LENGTH, sizeof(uint32_t));
 	src = (uint32_t *) xdma_alloc(LENGTH, sizeof(uint32_t));
@@ -224,15 +240,7 @@ int main(int argc, char *argv[])
 	printf("\n");
 #endif
 
-	/* Don't forget to free the mmapped memory
-	 */
-	if (munmap(map, FILESIZE) == -1) {
-		perror("Error un-mmapping the file");
-		/* Decide here whether to close(fd) and exit() or not. Depends... */
-	}
+	xdma_exit();
 
-	/* Un-mmaping doesn't close the file, so we still need to do that.
-	 */
-	close(fd);
 	return 0;
 }
