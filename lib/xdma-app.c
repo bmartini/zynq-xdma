@@ -77,14 +77,14 @@ void xdma_alloc_reset(void)
 	alloc_offset = 0;
 }
 
-void xdma_init(void)
+int xdma_init(void)
 {
 	/* Open a file for writing.
 	 */
 	fd = open(FILEPATH, O_RDWR | O_CREAT | O_TRUNC, (mode_t) 0600);
 	if (fd == -1) {
 		perror("Error opening file for writing");
-		exit(EXIT_FAILURE);
+		return EXIT_FAILURE;
 	}
 
 	/* mmap the file to get access to the memory area.
@@ -93,25 +93,28 @@ void xdma_init(void)
 	if (map == MAP_FAILED) {
 		close(fd);
 		perror("Error mmapping the file");
-		exit(EXIT_FAILURE);
+		return EXIT_FAILURE;
 	}
 
 	xdma_alloc_reset();
+
+	return EXIT_SUCCESS;
 }
 
-void xdma_exit(void)
+int xdma_exit(void)
 {
 
 	/* Don't forget to free the mmapped memory
 	 */
 	if (munmap(map, FILESIZE) == -1) {
 		perror("Error un-mmapping the file");
-		exit(EXIT_FAILURE);
+		return EXIT_FAILURE;
 	}
 
 	/* Un-mmaping doesn't close the file.
 	 */
 	close(fd);
+	return EXIT_SUCCESS;
 }
 
 /* Query driver for number of devices.
@@ -131,9 +134,9 @@ int xdma_num_of_devices(void)
  * To perform a one-way transaction set the unused directions pointer to NULL
  * or length to zero.
  */
-void xdma_perform_transaction(int device_id, enum xdma_wait wait,
-			      uint32_t * src_ptr, uint32_t src_length,
-			      uint32_t * dst_ptr, uint32_t dst_length)
+int xdma_perform_transaction(int device_id, enum xdma_wait wait,
+			     uint32_t * src_ptr, uint32_t src_length,
+			     uint32_t * dst_ptr, uint32_t dst_length)
 {
 	dst_buf.chan = dev.rx_chan;
 	dst_buf.completion = dev.rx_cmp;
@@ -144,7 +147,7 @@ void xdma_perform_transaction(int device_id, enum xdma_wait wait,
 	dst_buf.dir = XDMA_DEV_TO_MEM;
 	if (ioctl(fd, XDMA_PREP_BUF, &dst_buf) < 0) {
 		perror("Error ioctl set rx buf");
-		exit(EXIT_FAILURE);
+		return -1;
 	}
 	printf("config rx buffer\n");
 
@@ -156,7 +159,7 @@ void xdma_perform_transaction(int device_id, enum xdma_wait wait,
 	src_buf.dir = XDMA_MEM_TO_DEV;
 	if (ioctl(fd, XDMA_PREP_BUF, &src_buf) < 0) {
 		perror("Error ioctl set tx buf");
-		exit(EXIT_FAILURE);
+		return -1;
 	}
 	printf("config tx buffer\n");
 
@@ -166,7 +169,7 @@ void xdma_perform_transaction(int device_id, enum xdma_wait wait,
 	dst_trans.wait = 0;
 	if (ioctl(fd, XDMA_START_TRANSFER, &dst_trans) < 0) {
 		perror("Error ioctl start rx trans");
-		exit(EXIT_FAILURE);
+		return -1;
 	}
 	printf("config rx trans\n");
 
@@ -176,11 +179,11 @@ void xdma_perform_transaction(int device_id, enum xdma_wait wait,
 	src_trans.wait = 0;
 	if (ioctl(fd, XDMA_START_TRANSFER, &src_trans) < 0) {
 		perror("Error ioctl start tx trans");
-		exit(EXIT_FAILURE);
+		return -1;
 	}
 	printf("config tx trans\n");
 
-
+	return 0;
 }
 
 int main(int argc, char *argv[])
