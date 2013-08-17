@@ -25,6 +25,29 @@ uint32_t xdma_calc_offset(void *ptr)
 	return (((uint8_t *) ptr) - &map[0]);
 }
 
+uint32_t xdma_calc_size(int length, int byte_num)
+{
+	length = length * byte_num;
+
+	switch (length % 4) {
+	case 3:
+		length = (length+1);
+		break;
+	case 2:
+		length = (length+2);
+		break;
+	case 1:
+		length = (length+3);
+		break;
+	default:
+		length = length;
+		break;
+	}
+
+	return length;
+}
+
+
 uint8_t *xdma_alloc_uint8(int length)
 {
 	uint8_t *array = &map[alloc_offset];
@@ -157,7 +180,8 @@ int main(int argc, char *argv[])
 	rx_buf.completion = dev.rx_cmp;
 	rx_buf.cookie = (u32) NULL;
 	rx_buf.buf_offset = (u32) xdma_calc_offset(dst);
-	rx_buf.buf_size = (u32) (LENGTH * (sizeof(dst[0])));
+	rx_buf.buf_size = (u32) xdma_calc_size(LENGTH, sizeof(dst[0]));
+
 	rx_buf.dir = XDMA_DEV_TO_MEM;
 	if (ioctl(fd, XDMA_PREP_BUF, &rx_buf) < 0) {
 		perror("Error ioctl set rx buf");
@@ -170,7 +194,7 @@ int main(int argc, char *argv[])
 	tx_buf.completion = dev.tx_cmp;
 	tx_buf.cookie = (u32) NULL;
 	tx_buf.buf_offset = (u32) xdma_calc_offset(src);
-	tx_buf.buf_size = (u32) (LENGTH * (sizeof(src[0])));
+	tx_buf.buf_size = (u32) xdma_calc_size(LENGTH, sizeof(src[0]));
 	tx_buf.dir = XDMA_MEM_TO_DEV;
 	if (ioctl(fd, XDMA_PREP_BUF, &tx_buf) < 0) {
 		perror("Error ioctl set tx buf");
