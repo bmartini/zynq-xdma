@@ -18,7 +18,7 @@
 
 uint32_t alloc_offset;
 int fd;
-uint8_t *map;		/* mmapped array of char's */
+uint8_t *map;			/* mmapped array of char's */
 
 int num_of_devices;
 
@@ -33,13 +33,13 @@ uint32_t xdma_calc_size(int length, int byte_num)
 
 	switch (length % 4) {
 	case 3:
-		length = (length+1);
+		length = (length + 1);
 		break;
 	case 2:
-		length = (length+2);
+		length = (length + 2);
 		break;
 	case 1:
-		length = (length+3);
+		length = (length + 3);
 		break;
 	default:
 		length = length;
