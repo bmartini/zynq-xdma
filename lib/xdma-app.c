@@ -58,12 +58,12 @@ void *xdma_alloc(int length, int byte_num)
 	return array;
 }
 
-void xdma_alloc_reset()
+void xdma_alloc_reset(void)
 {
 	alloc_offset = 0;
 }
 
-void xdma_init()
+void xdma_init(void)
 {
 	/* Open a file for writing.
 	 */
@@ -85,7 +85,7 @@ void xdma_init()
 	xdma_alloc_reset();
 }
 
-void xdma_exit()
+void xdma_exit(void)
 {
 
 	/* Don't forget to free the mmapped memory
