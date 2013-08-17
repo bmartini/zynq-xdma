@@ -265,8 +265,8 @@ int main(int argc, char *argv[])
 	dst = (uint32_t *) xdma_alloc(LENGTH, sizeof(uint32_t));
 	src = (uint32_t *) xdma_alloc(LENGTH, sizeof(uint32_t));
 
-	printf("src offset %d\n", xdma_calc_offset(src));
-	printf("dst offset %d\n", xdma_calc_offset(dst));
+	printf("src offset in number of char's %d\n", xdma_calc_offset(src));
+	printf("dst offset in number of char's %d\n", xdma_calc_offset(dst));
 
 	// fill src with a value
 	for (i = 0; i < LENGTH; i++) {
