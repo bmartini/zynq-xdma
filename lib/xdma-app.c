@@ -77,8 +77,22 @@ void xdma_alloc_reset(void)
 	alloc_offset = 0;
 }
 
+/* Query driver for number of devices.
+ */
+int xdma_num_of_devices(void)
+{
+	int num_devices = 0;
+	if (ioctl(fd, XDMA_GET_NUM_DEVICES, &num_devices) < 0) {
+		perror("Error ioctl getting device num");
+		return -1;
+	}
+	return num_devices;
+}
+
 int xdma_init(void)
 {
+	int num_devices = 0;
+
 	/* Open a file for writing.
 	 */
 	fd = open(FILEPATH, O_RDWR | O_CREAT | O_TRUNC, (mode_t) 0600);
@@ -98,6 +112,46 @@ int xdma_init(void)
 
 	xdma_alloc_reset();
 
+	num_devices = xdma_num_of_devices();
+	if (num_devices <= 0) {
+		perror("Error no DMA devices found");
+		return EXIT_FAILURE;
+	}
+
+	dev.tx_chan = (u32) NULL;
+	dev.tx_cmp = (u32) NULL;
+	dev.rx_chan = (u32) NULL;
+	dev.rx_cmp = (u32) NULL;
+	dev.device_id = num_devices - 1;
+	if (ioctl(fd, XDMA_GET_DEV_INFO, &dev) < 0) {
+		perror("Error ioctl getting device info");
+		return EXIT_FAILURE;
+	}
+	printf("devices tx chan: %x, tx cmp:%x, rx chan: %x, rx cmp: %x\n",
+	       dev.tx_chan, dev.tx_cmp, dev.rx_chan, dev.rx_cmp);
+
+	dst_config.chan = dev.rx_chan;
+	dst_config.dir = XDMA_DEV_TO_MEM;
+	dst_config.coalesc = 1;
+	dst_config.delay = 0;
+	dst_config.reset = 0;
+	if (ioctl(fd, XDMA_DEVICE_CONTROL, &dst_config) < 0) {
+		perror("Error ioctl config rx chan");
+		return EXIT_FAILURE;
+	}
+	printf("config rx chans\n");
+
+	src_config.chan = dev.tx_chan;
+	src_config.dir = XDMA_MEM_TO_DEV;
+	src_config.coalesc = 1;
+	src_config.delay = 0;
+	src_config.reset = 0;
+	if (ioctl(fd, XDMA_DEVICE_CONTROL, &src_config) < 0) {
+		perror("Error ioctl config tx chan");
+		return EXIT_FAILURE;
+	}
+	printf("config tx chans\n");
+
 	return EXIT_SUCCESS;
 }
 
@@ -115,18 +169,6 @@ int xdma_exit(void)
 	 */
 	close(fd);
 	return EXIT_SUCCESS;
-}
-
-/* Query driver for number of devices.
- */
-int xdma_num_of_devices(void)
-{
-	int num_devices = 0;
-	if (ioctl(fd, XDMA_GET_NUM_DEVICES, &num_devices) < 0) {
-		perror("Error ioctl getting device num");
-		return -1;
-	}
-	return num_devices;
 }
 
 /* Perform DMA transaction
@@ -192,9 +234,10 @@ int main(int argc, char *argv[])
 	int i;
 	uint32_t *src;
 	uint32_t *dst;
-	int num_devices = 0;
 
-	xdma_init();
+	if (xdma_init() < 0) {
+		exit(EXIT_FAILURE);
+	}
 
 	dst = (uint32_t *) xdma_alloc(LENGTH, sizeof(uint32_t));
 	src = (uint32_t *) xdma_alloc(LENGTH, sizeof(uint32_t));
@@ -221,48 +264,6 @@ int main(int argc, char *argv[])
 		printf("%d\t", dst[i]);
 	}
 	printf("\n");
-
-	num_devices = xdma_num_of_devices();
-	if (num_devices <= 0) {
-		perror("Error no DMA devices found");
-		exit(EXIT_FAILURE);
-	}
-
-	/* Query driver for number of devices.
-	 */
-	dev.tx_chan = (u32) NULL;
-	dev.tx_cmp = (u32) NULL;
-	dev.rx_chan = (u32) NULL;
-	dev.rx_cmp = (u32) NULL;
-	dev.device_id = num_devices - 1;
-	if (ioctl(fd, XDMA_GET_DEV_INFO, &dev) < 0) {
-		perror("Error ioctl getting device info");
-		exit(EXIT_FAILURE);
-	}
-	printf("devices tx chan: %x, tx cmp:%x, rx chan: %x, rx cmp: %x\n",
-	       dev.tx_chan, dev.tx_cmp, dev.rx_chan, dev.rx_cmp);
-
-	dst_config.chan = dev.rx_chan;
-	dst_config.dir = XDMA_DEV_TO_MEM;
-	dst_config.coalesc = 1;
-	dst_config.delay = 0;
-	dst_config.reset = 0;
-	if (ioctl(fd, XDMA_DEVICE_CONTROL, &dst_config) < 0) {
-		perror("Error ioctl config rx chan");
-		exit(EXIT_FAILURE);
-	}
-	printf("config rx chans\n");
-
-	src_config.chan = dev.tx_chan;
-	src_config.dir = XDMA_MEM_TO_DEV;
-	src_config.coalesc = 1;
-	src_config.delay = 0;
-	src_config.reset = 0;
-	if (ioctl(fd, XDMA_DEVICE_CONTROL, &src_config) < 0) {
-		perror("Error ioctl config tx chan");
-		exit(EXIT_FAILURE);
-	}
-	printf("config tx chans\n");
 
 	xdma_perform_transaction(0, XDMA_WAIT_DST, src, LENGTH, dst, LENGTH);
 
