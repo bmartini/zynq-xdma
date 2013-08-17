@@ -58,6 +58,11 @@ void *xdma_alloc(int length, int byte_num)
 	return array;
 }
 
+void xdma_alloc_reset()
+{
+	alloc_offset = 0;
+}
+
 void xdma_init()
 {
 	/* Open a file for writing.
@@ -77,7 +82,7 @@ void xdma_init()
 		exit(EXIT_FAILURE);
 	}
 
-	alloc_offset = 0;
+	xdma_alloc_reset();
 }
 
 void xdma_exit()
