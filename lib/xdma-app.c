@@ -17,7 +17,35 @@
 #define FILESIZE (MAP_SIZE * sizeof(char))
 
 uint32_t alloc_offset;
-char *map;		/* mmapped array of char's */
+uint8_t *map;		/* mmapped array of char's */
+
+
+uint32_t xdma_calc_offset(void *ptr)
+{
+	return (((uint8_t *) ptr) - &map[0]);
+}
+
+uint8_t *xdma_alloc_uint8(int length)
+{
+	uint8_t *array = &map[alloc_offset];
+
+	switch (length % 4) {
+	case 3:
+		alloc_offset += (length+1);
+		break;
+	case 2:
+		alloc_offset += (length+2);
+		break;
+	case 1:
+		alloc_offset += (length+3);
+		break;
+	default:
+		alloc_offset += length;
+		break;
+	}
+
+	return array;
+}
 
 int main(int argc, char *argv[])
 {
