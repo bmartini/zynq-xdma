@@ -160,13 +160,13 @@ int main(int argc, char *argv[])
 	printf("config tx trans\n");
 
 	printf("test: rx buffer after transmit:\n");
-	for (i = 0; i < 10; ++i) {
+	for (i = 0; i < 10; i++) {
 		printf("%d\t", map[i]);
 	}
 	printf("\n");
 
 #if 0
-	for (i = 0; i < MAP_SIZE; ++i) {
+	for (i = 0; i < MAP_SIZE; i++) {
 		printf("%d\t", map[i]);
 	}
 	printf("\n");
