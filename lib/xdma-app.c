@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -15,12 +16,14 @@
 #define MAP_SIZE  (4000)
 #define FILESIZE (MAP_SIZE * sizeof(char))
 
+uint32_t alloc_offset;
+char *map;		/* mmapped array of char's */
+
 int main(int argc, char *argv[])
 {
 	const int LENGTH = 1024;
 	int i;
 	int fd;
-	char *map;		/* mmapped array of char's */
 
 	/* Open a file for writing.
 	 *  - Creating the file if it doesn't exist.
@@ -42,6 +45,9 @@ int main(int argc, char *argv[])
 		perror("Error mmapping the file");
 		exit(EXIT_FAILURE);
 	}
+
+	alloc_offset = 0;
+
 
 	/* Now write int's to the file as if it were memory (an array of ints).
 	 */
