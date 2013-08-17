@@ -21,7 +21,7 @@ int fd;
 uint8_t *map;			/* mmapped array of char's */
 
 int num_of_devices;
-struct xdma_dev dev;
+struct xdma_dev xdma_devices[MAX_DEVICES];
 
 enum xdma_wait {
 	XDMA_WAIT_SRC = 1,
@@ -85,7 +85,7 @@ int xdma_num_of_devices(void)
 
 int xdma_init(void)
 {
-	int num_devices = 0;
+	int i;
 	struct xdma_chan_cfg dst_config;
 	struct xdma_chan_cfg src_config;
 
@@ -108,46 +108,52 @@ int xdma_init(void)
 
 	xdma_alloc_reset();
 
-	num_devices = xdma_num_of_devices();
-	if (num_devices <= 0) {
+	num_of_devices = xdma_num_of_devices();
+	if (num_of_devices <= 0) {
 		perror("Error no DMA devices found");
 		return EXIT_FAILURE;
 	}
 
-	dev.tx_chan = (u32) NULL;
-	dev.tx_cmp = (u32) NULL;
-	dev.rx_chan = (u32) NULL;
-	dev.rx_cmp = (u32) NULL;
-	dev.device_id = num_devices - 1;
-	if (ioctl(fd, XDMA_GET_DEV_INFO, &dev) < 0) {
-		perror("Error ioctl getting device info");
-		return EXIT_FAILURE;
-	}
-	printf("devices tx chan: %x, tx cmp:%x, rx chan: %x, rx cmp: %x\n",
-	       dev.tx_chan, dev.tx_cmp, dev.rx_chan, dev.rx_cmp);
+	for (i = 0; i < MAX_DEVICES; i++) {
+		xdma_devices[i].tx_chan = (u32) NULL;
+		xdma_devices[i].tx_cmp = (u32) NULL;
+		xdma_devices[i].rx_chan = (u32) NULL;
+		xdma_devices[i].rx_cmp = (u32) NULL;
+		xdma_devices[i].device_id = i;
 
-	dst_config.chan = dev.rx_chan;
-	dst_config.dir = XDMA_DEV_TO_MEM;
-	dst_config.coalesc = 1;
-	dst_config.delay = 0;
-	dst_config.reset = 0;
-	if (ioctl(fd, XDMA_DEVICE_CONTROL, &dst_config) < 0) {
-		perror("Error ioctl config rx chan");
-		return EXIT_FAILURE;
-	}
-	printf("config rx chans\n");
+		if (i < num_of_devices) {
+			if (ioctl(fd, XDMA_GET_DEV_INFO, &xdma_devices[i]) < 0) {
+				perror("Error ioctl getting device info");
+				return EXIT_FAILURE;
+			}
+			printf
+			    ("devices tx chan: %x, tx cmp:%x, rx chan: %x, rx cmp: %x\n",
+			     xdma_devices[i].tx_chan, xdma_devices[i].tx_cmp,
+			     xdma_devices[i].rx_chan, xdma_devices[i].rx_cmp);
 
-	src_config.chan = dev.tx_chan;
-	src_config.dir = XDMA_MEM_TO_DEV;
-	src_config.coalesc = 1;
-	src_config.delay = 0;
-	src_config.reset = 0;
-	if (ioctl(fd, XDMA_DEVICE_CONTROL, &src_config) < 0) {
-		perror("Error ioctl config tx chan");
-		return EXIT_FAILURE;
-	}
-	printf("config tx chans\n");
+			dst_config.chan = xdma_devices[i].rx_chan;
+			dst_config.dir = XDMA_DEV_TO_MEM;
+			dst_config.coalesc = 1;
+			dst_config.delay = 0;
+			dst_config.reset = 0;
+			if (ioctl(fd, XDMA_DEVICE_CONTROL, &dst_config) < 0) {
+				perror("Error ioctl config rx chan");
+				return EXIT_FAILURE;
+			}
+			printf("config rx chans\n");
 
+			src_config.chan = xdma_devices[i].tx_chan;
+			src_config.dir = XDMA_MEM_TO_DEV;
+			src_config.coalesc = 1;
+			src_config.delay = 0;
+			src_config.reset = 0;
+			if (ioctl(fd, XDMA_DEVICE_CONTROL, &src_config) < 0) {
+				perror("Error ioctl config tx chan");
+				return EXIT_FAILURE;
+			}
+			printf("config tx chans\n");
+		}
+	}
 	return EXIT_SUCCESS;
 }
 
@@ -181,8 +187,8 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 	struct xdma_transfer dst_trans;
 	struct xdma_transfer src_trans;
 
-	dst_buf.chan = dev.rx_chan;
-	dst_buf.completion = dev.rx_cmp;
+	dst_buf.chan = xdma_devices[0].rx_chan;
+	dst_buf.completion = xdma_devices[0].rx_cmp;
 	dst_buf.cookie = (u32) NULL;
 	dst_buf.buf_offset = (u32) xdma_calc_offset(dst_ptr);
 	dst_buf.buf_size = (u32) xdma_calc_size(dst_length, sizeof(dst_ptr[0]));
@@ -194,8 +200,8 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 	}
 	printf("config rx buffer\n");
 
-	src_buf.chan = dev.tx_chan;
-	src_buf.completion = dev.tx_cmp;
+	src_buf.chan = xdma_devices[0].tx_chan;
+	src_buf.completion = xdma_devices[0].tx_cmp;
 	src_buf.cookie = (u32) NULL;
 	src_buf.buf_offset = (u32) xdma_calc_offset(src_ptr);
 	src_buf.buf_size = (u32) xdma_calc_size(src_length, sizeof(src_ptr[0]));
@@ -206,8 +212,8 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 	}
 	printf("config tx buffer\n");
 
-	dst_trans.chan = dev.rx_chan;
-	dst_trans.completion = dev.rx_cmp;
+	dst_trans.chan = xdma_devices[0].rx_chan;
+	dst_trans.completion = xdma_devices[0].rx_cmp;
 	dst_trans.cookie = dst_buf.cookie;
 	dst_trans.wait = 0;
 	if (ioctl(fd, XDMA_START_TRANSFER, &dst_trans) < 0) {
@@ -216,8 +222,8 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 	}
 	printf("config rx trans\n");
 
-	src_trans.chan = dev.tx_chan;
-	src_trans.completion = dev.tx_cmp;
+	src_trans.chan = xdma_devices[0].tx_chan;
+	src_trans.completion = xdma_devices[0].tx_cmp;
 	src_trans.cookie = src_buf.cookie;
 	src_trans.wait = 0;
 	if (ioctl(fd, XDMA_START_TRANSFER, &src_trans) < 0) {
