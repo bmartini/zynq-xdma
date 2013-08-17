@@ -1,6 +1,5 @@
 CC = gcc
-#LDFLAGS := -lxdma
-LDFLAGS :=
+LDFLAGS := -lxdma
 CFLAGS := -c -Wall -Werror
 INCLUDES := -I../dev
 
