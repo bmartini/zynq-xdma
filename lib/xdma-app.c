@@ -14,7 +14,7 @@
 
 #define FILEPATH "/dev/xdma"
 #define MAP_SIZE  (16000)
-#define FILESIZE (MAP_SIZE * sizeof(char))
+#define FILESIZE (MAP_SIZE * sizeof(uint8_t))
 
 uint32_t alloc_offset;
 int fd;
