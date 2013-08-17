@@ -127,10 +127,6 @@ int xdma_init(void)
 				perror("Error ioctl getting device info");
 				return EXIT_FAILURE;
 			}
-			printf
-			    ("devices tx chan: %x, tx cmp:%x, rx chan: %x, rx cmp: %x\n",
-			     xdma_devices[i].tx_chan, xdma_devices[i].tx_cmp,
-			     xdma_devices[i].rx_chan, xdma_devices[i].rx_cmp);
 
 			dst_config.chan = xdma_devices[i].rx_chan;
 			dst_config.dir = XDMA_DEV_TO_MEM;
@@ -141,7 +137,6 @@ int xdma_init(void)
 				perror("Error ioctl config dst (rx) chan");
 				return EXIT_FAILURE;
 			}
-			printf("config dst (rx) chans\n");
 
 			src_config.chan = xdma_devices[i].tx_chan;
 			src_config.dir = XDMA_MEM_TO_DEV;
@@ -152,7 +147,6 @@ int xdma_init(void)
 				perror("Error ioctl config src (tx) chan");
 				return EXIT_FAILURE;
 			}
-			printf("config src (tx) chans\n");
 		}
 	}
 	return EXIT_SUCCESS;
@@ -205,7 +199,6 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 			perror("Error ioctl set src (tx) buf");
 			return -1;
 		}
-		printf("config src (tx) buffer\n");
 	}
 
 	if (dst_used) {
@@ -221,7 +214,6 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 			perror("Error ioctl set dst (rx) buf");
 			return -1;
 		}
-		printf("config dst (rx) buffer\n");
 	}
 
 	if (src_used) {
@@ -233,7 +225,6 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 			perror("Error ioctl start src (tx) trans");
 			return -1;
 		}
-		printf("config src (tx) trans\n");
 	}
 
 	if (dst_used) {
@@ -245,7 +236,6 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 			perror("Error ioctl start dst (rx) trans");
 			return -1;
 		}
-		printf("config dst (rx) trans\n");
 	}
 
 	return 0;
