@@ -22,12 +22,6 @@ uint8_t *map;			/* mmapped array of char's */
 
 int num_of_devices;
 struct xdma_dev dev;
-struct xdma_chan_cfg dst_config;
-struct xdma_chan_cfg src_config;
-struct xdma_buf_info dst_buf;
-struct xdma_buf_info src_buf;
-struct xdma_transfer dst_trans;
-struct xdma_transfer src_trans;
 
 enum xdma_wait {
 	XDMA_WAIT_SRC = 1,
@@ -92,6 +86,8 @@ int xdma_num_of_devices(void)
 int xdma_init(void)
 {
 	int num_devices = 0;
+	struct xdma_chan_cfg dst_config;
+	struct xdma_chan_cfg src_config;
 
 	/* Open a file for writing.
 	 */
@@ -180,6 +176,11 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 			     uint32_t * src_ptr, uint32_t src_length,
 			     uint32_t * dst_ptr, uint32_t dst_length)
 {
+	struct xdma_buf_info dst_buf;
+	struct xdma_buf_info src_buf;
+	struct xdma_transfer dst_trans;
+	struct xdma_transfer src_trans;
+
 	dst_buf.chan = dev.rx_chan;
 	dst_buf.completion = dev.rx_cmp;
 	dst_buf.cookie = (u32) NULL;
