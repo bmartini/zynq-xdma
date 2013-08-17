@@ -159,13 +159,13 @@ int main(int argc, char *argv[])
 	printf("devices tx chan: %x, tx cmp:%x, rx chan: %x, rx cmp: %x\n",
 	       dev.tx_chan, dev.tx_cmp, dev.rx_chan, dev.rx_cmp);
 
-	struct xdma_chan_cfg rx_config;
-	rx_config.chan = dev.rx_chan;
-	rx_config.dir = XDMA_DEV_TO_MEM;
-	rx_config.coalesc = 1;
-	rx_config.delay = 0;
-	rx_config.reset = 0;
-	if (ioctl(fd, XDMA_DEVICE_CONTROL, &rx_config) < 0) {
+	struct xdma_chan_cfg dst_config;
+	dst_config.chan = dev.rx_chan;
+	dst_config.dir = XDMA_DEV_TO_MEM;
+	dst_config.coalesc = 1;
+	dst_config.delay = 0;
+	dst_config.reset = 0;
+	if (ioctl(fd, XDMA_DEVICE_CONTROL, &dst_config) < 0) {
 		perror("Error ioctl config rx chan");
 		exit(EXIT_FAILURE);
 	}
@@ -183,15 +183,15 @@ int main(int argc, char *argv[])
 	}
 	printf("config tx chans\n");
 
-	struct xdma_buf_info rx_buf;
-	rx_buf.chan = dev.rx_chan;
-	rx_buf.completion = dev.rx_cmp;
-	rx_buf.cookie = (u32) NULL;
-	rx_buf.buf_offset = (u32) xdma_calc_offset(dst);
-	rx_buf.buf_size = (u32) xdma_calc_size(LENGTH, sizeof(dst[0]));
+	struct xdma_buf_info dst_buf;
+	dst_buf.chan = dev.rx_chan;
+	dst_buf.completion = dev.rx_cmp;
+	dst_buf.cookie = (u32) NULL;
+	dst_buf.buf_offset = (u32) xdma_calc_offset(dst);
+	dst_buf.buf_size = (u32) xdma_calc_size(LENGTH, sizeof(dst[0]));
 
-	rx_buf.dir = XDMA_DEV_TO_MEM;
-	if (ioctl(fd, XDMA_PREP_BUF, &rx_buf) < 0) {
+	dst_buf.dir = XDMA_DEV_TO_MEM;
+	if (ioctl(fd, XDMA_PREP_BUF, &dst_buf) < 0) {
 		perror("Error ioctl set rx buf");
 		exit(EXIT_FAILURE);
 	}
@@ -210,12 +210,12 @@ int main(int argc, char *argv[])
 	}
 	printf("config tx buffer\n");
 
-	struct xdma_transfer rx_trans;
-	rx_trans.chan = dev.rx_chan;
-	rx_trans.completion = dev.rx_cmp;
-	rx_trans.cookie = rx_buf.cookie;
-	rx_trans.wait = 0;
-	if (ioctl(fd, XDMA_START_TRANSFER, &rx_trans) < 0) {
+	struct xdma_transfer dst_trans;
+	dst_trans.chan = dev.rx_chan;
+	dst_trans.completion = dev.rx_cmp;
+	dst_trans.cookie = dst_buf.cookie;
+	dst_trans.wait = 0;
+	if (ioctl(fd, XDMA_START_TRANSFER, &dst_trans) < 0) {
 		perror("Error ioctl start rx trans");
 		exit(EXIT_FAILURE);
 	}
