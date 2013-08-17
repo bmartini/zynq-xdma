@@ -276,7 +276,7 @@ int main(int argc, char *argv[])
 	}
 	printf("\n");
 
-	xdma_perform_transaction(0, XDMA_WAIT_DST, src, LENGTH, dst, LENGTH);
+	xdma_perform_transaction(0, XDMA_WAIT_NONE, src, LENGTH, dst, LENGTH);
 
 	printf("test: dst buffer after transmit:\n");
 	for (i = 0; i < 10; i++) {
