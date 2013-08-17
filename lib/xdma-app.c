@@ -90,7 +90,7 @@ int xdma_init(void)
 	struct xdma_chan_cfg dst_config;
 	struct xdma_chan_cfg src_config;
 
-	/* Open a file for writing.
+	/* Open the char device file.
 	 */
 	fd = open(FILEPATH, O_RDWR | O_CREAT | O_TRUNC, (mode_t) 0600);
 	if (fd == -1) {
@@ -98,7 +98,7 @@ int xdma_init(void)
 		return EXIT_FAILURE;
 	}
 
-	/* mmap the file to get access to the memory area.
+	/* mmap the file to get access to the DMA memory area.
 	 */
 	map = mmap(0, FILESIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	if (map == MAP_FAILED) {
@@ -138,10 +138,10 @@ int xdma_init(void)
 			dst_config.delay = 0;
 			dst_config.reset = 0;
 			if (ioctl(fd, XDMA_DEVICE_CONTROL, &dst_config) < 0) {
-				perror("Error ioctl config rx chan");
+				perror("Error ioctl config dst (rx) chan");
 				return EXIT_FAILURE;
 			}
-			printf("config rx chans\n");
+			printf("config dst (rx) chans\n");
 
 			src_config.chan = xdma_devices[i].tx_chan;
 			src_config.dir = XDMA_MEM_TO_DEV;
@@ -149,10 +149,10 @@ int xdma_init(void)
 			src_config.delay = 0;
 			src_config.reset = 0;
 			if (ioctl(fd, XDMA_DEVICE_CONTROL, &src_config) < 0) {
-				perror("Error ioctl config tx chan");
+				perror("Error ioctl config src (tx) chan");
 				return EXIT_FAILURE;
 			}
-			printf("config tx chans\n");
+			printf("config src (tx) chans\n");
 		}
 	}
 	return EXIT_SUCCESS;
@@ -160,9 +160,6 @@ int xdma_init(void)
 
 int xdma_exit(void)
 {
-
-	/* Don't forget to free the mmapped memory
-	 */
 	if (munmap(map, FILESIZE) == -1) {
 		perror("Error un-mmapping the file");
 		return EXIT_FAILURE;
@@ -205,10 +202,10 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 
 		src_buf.dir = XDMA_MEM_TO_DEV;
 		if (ioctl(fd, XDMA_PREP_BUF, &src_buf) < 0) {
-			perror("Error ioctl set tx buf");
+			perror("Error ioctl set src (tx) buf");
 			return -1;
 		}
-		printf("config tx buffer\n");
+		printf("config src (tx) buffer\n");
 	}
 
 	if (dst_used) {
@@ -221,10 +218,10 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 
 		dst_buf.dir = XDMA_DEV_TO_MEM;
 		if (ioctl(fd, XDMA_PREP_BUF, &dst_buf) < 0) {
-			perror("Error ioctl set rx buf");
+			perror("Error ioctl set dst (rx) buf");
 			return -1;
 		}
-		printf("config rx buffer\n");
+		printf("config dst (rx) buffer\n");
 	}
 
 	if (src_used) {
@@ -233,10 +230,10 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 		src_trans.cookie = src_buf.cookie;
 		src_trans.wait = (0 != (wait & XDMA_WAIT_SRC));
 		if (ioctl(fd, XDMA_START_TRANSFER, &src_trans) < 0) {
-			perror("Error ioctl start tx trans");
+			perror("Error ioctl start src (tx) trans");
 			return -1;
 		}
-		printf("config tx trans\n");
+		printf("config src (tx) trans\n");
 	}
 
 	if (dst_used) {
@@ -245,10 +242,10 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 		dst_trans.cookie = dst_buf.cookie;
 		dst_trans.wait = (0 != (wait & XDMA_WAIT_DST));
 		if (ioctl(fd, XDMA_START_TRANSFER, &dst_trans) < 0) {
-			perror("Error ioctl start rx trans");
+			perror("Error ioctl start dst (rx) trans");
 			return -1;
 		}
-		printf("config rx trans\n");
+		printf("config dst (rx) trans\n");
 	}
 
 	return 0;
@@ -271,8 +268,6 @@ int main(int argc, char *argv[])
 	printf("src offset %d\n", xdma_calc_offset(src));
 	printf("dst offset %d\n", xdma_calc_offset(dst));
 
-	/* Now write int's to the file as if it were memory (an array of ints).
-	 */
 	// fill src with a value
 	for (i = 0; i < LENGTH; i++) {
 		src[i] = 'B';
