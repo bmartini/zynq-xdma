@@ -24,9 +24,10 @@ int num_of_devices;
 struct xdma_dev xdma_devices[MAX_DEVICES];
 
 enum xdma_wait {
-	XDMA_WAIT_SRC = 1,
-	XDMA_WAIT_DST = 2,
-	XDMA_WAIT_BOTH = 3,
+	XDMA_WAIT_NONE = 0,
+	XDMA_WAIT_SRC = (1 << 0),
+	XDMA_WAIT_DST = (1 << 1),
+	XDMA_WAIT_BOTH = (1 << 1) | (1 << 0),
 };
 
 uint32_t xdma_calc_offset(void *ptr)
@@ -199,7 +200,8 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 		dst_buf.completion = xdma_devices[device_id].rx_cmp;
 		dst_buf.cookie = (u32) NULL;
 		dst_buf.buf_offset = (u32) xdma_calc_offset(dst_ptr);
-		dst_buf.buf_size = (u32) xdma_calc_size(dst_length, sizeof(dst_ptr[0]));
+		dst_buf.buf_size =
+		    (u32) xdma_calc_size(dst_length, sizeof(dst_ptr[0]));
 
 		dst_buf.dir = XDMA_DEV_TO_MEM;
 		if (ioctl(fd, XDMA_PREP_BUF, &dst_buf) < 0) {
@@ -214,7 +216,9 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 		src_buf.completion = xdma_devices[device_id].tx_cmp;
 		src_buf.cookie = (u32) NULL;
 		src_buf.buf_offset = (u32) xdma_calc_offset(src_ptr);
-		src_buf.buf_size = (u32) xdma_calc_size(src_length, sizeof(src_ptr[0]));
+		src_buf.buf_size =
+		    (u32) xdma_calc_size(src_length, sizeof(src_ptr[0]));
+
 		src_buf.dir = XDMA_MEM_TO_DEV;
 		if (ioctl(fd, XDMA_PREP_BUF, &src_buf) < 0) {
 			perror("Error ioctl set tx buf");
@@ -223,12 +227,11 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 		printf("config tx buffer\n");
 	}
 
-
 	if (dst_used) {
 		dst_trans.chan = xdma_devices[device_id].rx_chan;
 		dst_trans.completion = xdma_devices[device_id].rx_cmp;
 		dst_trans.cookie = dst_buf.cookie;
-		dst_trans.wait = 0;
+		dst_trans.wait = (0 != (wait & XDMA_WAIT_DST));
 		if (ioctl(fd, XDMA_START_TRANSFER, &dst_trans) < 0) {
 			perror("Error ioctl start rx trans");
 			return -1;
@@ -240,7 +243,7 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 		src_trans.chan = xdma_devices[device_id].tx_chan;
 		src_trans.completion = xdma_devices[device_id].tx_cmp;
 		src_trans.cookie = src_buf.cookie;
-		src_trans.wait = 0;
+		src_trans.wait = (0 != (wait & XDMA_WAIT_SRC));
 		if (ioctl(fd, XDMA_START_TRANSFER, &src_trans) < 0) {
 			perror("Error ioctl start tx trans");
 			return -1;
@@ -288,7 +291,7 @@ int main(int argc, char *argv[])
 	}
 	printf("\n");
 
-	xdma_perform_transaction(0, XDMA_WAIT_DST, src, LENGTH, dst, LENGTH);
+	xdma_perform_transaction(0, XDMA_WAIT_NONE, src, LENGTH, dst, LENGTH);
 
 	printf("test: dst buffer after transmit:\n");
 	for (i = 0; i < 10; i++) {
