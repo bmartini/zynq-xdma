@@ -186,51 +186,62 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 	struct xdma_buf_info src_buf;
 	struct xdma_transfer dst_trans;
 	struct xdma_transfer src_trans;
+	const int src_used = ((src_ptr != NULL) && (src_length != 0));
+	const int dst_used = ((dst_ptr != NULL) && (dst_length != 0));
 
-	dst_buf.chan = xdma_devices[0].rx_chan;
-	dst_buf.completion = xdma_devices[0].rx_cmp;
-	dst_buf.cookie = (u32) NULL;
-	dst_buf.buf_offset = (u32) xdma_calc_offset(dst_ptr);
-	dst_buf.buf_size = (u32) xdma_calc_size(dst_length, sizeof(dst_ptr[0]));
+	if (dst_used) {
+		dst_buf.chan = xdma_devices[0].rx_chan;
+		dst_buf.completion = xdma_devices[0].rx_cmp;
+		dst_buf.cookie = (u32) NULL;
+		dst_buf.buf_offset = (u32) xdma_calc_offset(dst_ptr);
+		dst_buf.buf_size = (u32) xdma_calc_size(dst_length, sizeof(dst_ptr[0]));
 
-	dst_buf.dir = XDMA_DEV_TO_MEM;
-	if (ioctl(fd, XDMA_PREP_BUF, &dst_buf) < 0) {
-		perror("Error ioctl set rx buf");
-		return -1;
+		dst_buf.dir = XDMA_DEV_TO_MEM;
+		if (ioctl(fd, XDMA_PREP_BUF, &dst_buf) < 0) {
+			perror("Error ioctl set rx buf");
+			return -1;
+		}
+		printf("config rx buffer\n");
 	}
-	printf("config rx buffer\n");
 
-	src_buf.chan = xdma_devices[0].tx_chan;
-	src_buf.completion = xdma_devices[0].tx_cmp;
-	src_buf.cookie = (u32) NULL;
-	src_buf.buf_offset = (u32) xdma_calc_offset(src_ptr);
-	src_buf.buf_size = (u32) xdma_calc_size(src_length, sizeof(src_ptr[0]));
-	src_buf.dir = XDMA_MEM_TO_DEV;
-	if (ioctl(fd, XDMA_PREP_BUF, &src_buf) < 0) {
-		perror("Error ioctl set tx buf");
-		return -1;
+	if (src_used) {
+		src_buf.chan = xdma_devices[0].tx_chan;
+		src_buf.completion = xdma_devices[0].tx_cmp;
+		src_buf.cookie = (u32) NULL;
+		src_buf.buf_offset = (u32) xdma_calc_offset(src_ptr);
+		src_buf.buf_size = (u32) xdma_calc_size(src_length, sizeof(src_ptr[0]));
+		src_buf.dir = XDMA_MEM_TO_DEV;
+		if (ioctl(fd, XDMA_PREP_BUF, &src_buf) < 0) {
+			perror("Error ioctl set tx buf");
+			return -1;
+		}
+		printf("config tx buffer\n");
 	}
-	printf("config tx buffer\n");
 
-	dst_trans.chan = xdma_devices[0].rx_chan;
-	dst_trans.completion = xdma_devices[0].rx_cmp;
-	dst_trans.cookie = dst_buf.cookie;
-	dst_trans.wait = 0;
-	if (ioctl(fd, XDMA_START_TRANSFER, &dst_trans) < 0) {
-		perror("Error ioctl start rx trans");
-		return -1;
-	}
-	printf("config rx trans\n");
 
-	src_trans.chan = xdma_devices[0].tx_chan;
-	src_trans.completion = xdma_devices[0].tx_cmp;
-	src_trans.cookie = src_buf.cookie;
-	src_trans.wait = 0;
-	if (ioctl(fd, XDMA_START_TRANSFER, &src_trans) < 0) {
-		perror("Error ioctl start tx trans");
-		return -1;
+	if (dst_used) {
+		dst_trans.chan = xdma_devices[0].rx_chan;
+		dst_trans.completion = xdma_devices[0].rx_cmp;
+		dst_trans.cookie = dst_buf.cookie;
+		dst_trans.wait = 0;
+		if (ioctl(fd, XDMA_START_TRANSFER, &dst_trans) < 0) {
+			perror("Error ioctl start rx trans");
+			return -1;
+		}
+		printf("config rx trans\n");
 	}
-	printf("config tx trans\n");
+
+	if (src_used) {
+		src_trans.chan = xdma_devices[0].tx_chan;
+		src_trans.completion = xdma_devices[0].tx_cmp;
+		src_trans.cookie = src_buf.cookie;
+		src_trans.wait = 0;
+		if (ioctl(fd, XDMA_START_TRANSFER, &src_trans) < 0) {
+			perror("Error ioctl start tx trans");
+			return -1;
+		}
+		printf("config tx trans\n");
+	}
 
 	return 0;
 }
