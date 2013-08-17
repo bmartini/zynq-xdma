@@ -20,6 +20,7 @@ uint32_t alloc_offset;
 int fd;
 uint8_t *map;		/* mmapped array of char's */
 
+int num_of_devices;
 
 uint32_t xdma_calc_offset(void *ptr)
 {
@@ -100,12 +101,25 @@ void xdma_exit(void)
 	close(fd);
 }
 
+/* Query driver for number of devices.
+ */
+int xdma_num_of_devices(void)
+{
+	int num_devices = 0;
+	if (ioctl(fd, XDMA_GET_NUM_DEVICES, &num_devices) < 0) {
+		perror("Error ioctl getting device num");
+		return -1;
+	}
+	return num_devices;
+}
+
 int main(int argc, char *argv[])
 {
 	const int LENGTH = 1025;
 	int i;
 	uint32_t *src;
 	uint32_t *dst;
+	int num_devices = 0;
 
 	xdma_init();
 
@@ -135,14 +149,11 @@ int main(int argc, char *argv[])
 	}
 	printf("\n");
 
-	/* Query driver for number of devices.
-	 */
-	int num_devices = 0;
-	if (ioctl(fd, XDMA_GET_NUM_DEVICES, &num_devices) < 0) {
-		perror("Error ioctl getting device num");
+	num_devices = xdma_num_of_devices();
+	if (num_devices <= 0) {
+		perror("Error no DMA devices found");
 		exit(EXIT_FAILURE);
 	}
-	printf("Number of devices: %d\n", num_devices);
 
 	/* Query driver for number of devices.
 	 */
