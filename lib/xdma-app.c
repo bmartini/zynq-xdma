@@ -52,6 +52,8 @@ int main(int argc, char *argv[])
 	const int LENGTH = 1024;
 	int i;
 	int fd;
+	uint8_t *src;
+	uint8_t *dst;
 
 	/* Open a file for writing.
 	 *  - Creating the file if it doesn't exist.
@@ -76,24 +78,29 @@ int main(int argc, char *argv[])
 
 	alloc_offset = 0;
 
+	dst = xdma_alloc_uint8(LENGTH);
+	src = xdma_alloc_uint8(LENGTH);
+
+	printf("src offset %d\n", xdma_calc_offset(src));
+	printf("dst offset %d\n", xdma_calc_offset(dst));
 
 	/* Now write int's to the file as if it were memory (an array of ints).
 	 */
-	// fill tx with a value
+	// fill src with a value
 	for (i = 0; i < LENGTH; i++) {
-		map[LENGTH + i] = 'B';
+		src[i] = 'B';
 	}
-	map[LENGTH + LENGTH - 1] = '\n';
+	src[LENGTH - 1] = '\n';
 
-	// fill rx with a value
+	// fill dst with a value
 	for (i = 0; i < LENGTH; i++) {
-		map[i] = 'A';
+		dst[i] = 'A';
 	}
-	map[LENGTH - 1] = '\n';
+	dst[LENGTH - 1] = '\n';
 
-	printf("test: rx buffer before transmit:\n");
+	printf("test: dst buffer before transmit:\n");
 	for (i = 0; i < 10; i++) {
-		printf("%d\t", map[i]);
+		printf("%d\t", dst[i]);
 	}
 	printf("\n");
 
@@ -149,8 +156,8 @@ int main(int argc, char *argv[])
 	rx_buf.chan = dev.rx_chan;
 	rx_buf.completion = dev.rx_cmp;
 	rx_buf.cookie = (u32) NULL;
-	rx_buf.buf_offset = (u32) 0;
-	rx_buf.buf_size = (u32) LENGTH;
+	rx_buf.buf_offset = (u32) xdma_calc_offset(dst);
+	rx_buf.buf_size = (u32) (LENGTH * (sizeof(dst[0])));
 	rx_buf.dir = XDMA_DEV_TO_MEM;
 	if (ioctl(fd, XDMA_PREP_BUF, &rx_buf) < 0) {
 		perror("Error ioctl set rx buf");
@@ -162,8 +169,8 @@ int main(int argc, char *argv[])
 	tx_buf.chan = dev.tx_chan;
 	tx_buf.completion = dev.tx_cmp;
 	tx_buf.cookie = (u32) NULL;
-	tx_buf.buf_offset = (u32) LENGTH;
-	tx_buf.buf_size = (u32) LENGTH;
+	tx_buf.buf_offset = (u32) xdma_calc_offset(src);
+	tx_buf.buf_size = (u32) (LENGTH * (sizeof(src[0])));
 	tx_buf.dir = XDMA_MEM_TO_DEV;
 	if (ioctl(fd, XDMA_PREP_BUF, &tx_buf) < 0) {
 		perror("Error ioctl set tx buf");
@@ -193,9 +200,9 @@ int main(int argc, char *argv[])
 	}
 	printf("config tx trans\n");
 
-	printf("test: rx buffer after transmit:\n");
+	printf("test: dst buffer after transmit:\n");
 	for (i = 0; i < 10; i++) {
-		printf("%d\t", map[i]);
+		printf("%d\t", dst[i]);
 	}
 	printf("\n");
 
