@@ -1,7 +1,7 @@
 #include <stdint.h>
 
 #define FILEPATH "/dev/xdma"
-#define MAP_SIZE  (16000)
+#define MAP_SIZE  (33554432)
 #define FILESIZE (MAP_SIZE * sizeof(uint8_t))
 
 enum xdma_wait {
