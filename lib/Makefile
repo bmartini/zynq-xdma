@@ -29,6 +29,7 @@ app : app.o
 
 install : libxdma
 	sudo cp ${PWD}/libxdma.so /usr/lib
+	sudo cp ${PWD}/libxdma.h /usr/include
 	sudo chmod 0755 /usr/lib/libxdma.so
 	sudo ldconfig
 
