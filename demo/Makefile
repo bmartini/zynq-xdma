@@ -13,13 +13,22 @@ SOURCES = \
 
 OBJECTS = $(SOURCES:.c=.o)
 
+.PHONY : all
 all: $(EXECUTABLE)
 
-$(EXECUTABLE): $(OBJECTS)
+
+test : xdma-test.o
 	$(CC) $(LDFLAGS) $< -o $@
+
+
+demo : xdma-demo.o
+	$(CC) $(LDFLAGS) $< -o $@
+
 
 .c.o:
 	$(CC) $(INCLUDES) $(CFLAGS) $< -o $@
 
+
+.PHONY : clean
 clean:
 	rm -f *.o $(EXECUTABLE)
