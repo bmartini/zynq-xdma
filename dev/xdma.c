@@ -530,7 +530,7 @@ static int __init xdma_init(void)
 	if (alloc_chrdev_region(&dev_num, 0, 1, MODULE_NAME) < 0) {
 		return -1;
 	}
-	if ((cl = class_create(THIS_MODULE, "chardrv")) == NULL) {
+	if ((cl = class_create(THIS_MODULE, MODULE_NAME)) == NULL) {
 		unregister_chrdev_region(dev_num, 1);
 		return -1;
 	}
