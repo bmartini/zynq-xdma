@@ -173,9 +173,7 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 		src_buf.completion = xdma_devices[device_id].tx_cmp;
 		src_buf.cookie = (u32) NULL;
 		src_buf.buf_offset = (u32) xdma_calc_offset(src_ptr);
-		src_buf.buf_size =
-		    (u32) xdma_calc_size(src_length, sizeof(src_ptr[0]));
-
+		src_buf.buf_size = (u32) (src_length * sizeof(src_ptr[0]));
 		src_buf.dir = XDMA_MEM_TO_DEV;
 		if (ioctl(fd, XDMA_PREP_BUF, &src_buf) < 0) {
 			perror("Error ioctl set src (tx) buf");
@@ -188,9 +186,7 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 		dst_buf.completion = xdma_devices[device_id].rx_cmp;
 		dst_buf.cookie = (u32) NULL;
 		dst_buf.buf_offset = (u32) xdma_calc_offset(dst_ptr);
-		dst_buf.buf_size =
-		    (u32) xdma_calc_size(dst_length, sizeof(dst_ptr[0]));
-
+		dst_buf.buf_size = (u32) (dst_length * sizeof(dst_ptr[0]));
 		dst_buf.dir = XDMA_DEV_TO_MEM;
 		if (ioctl(fd, XDMA_PREP_BUF, &dst_buf) < 0) {
 			perror("Error ioctl set dst (rx) buf");
