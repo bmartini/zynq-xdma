@@ -15,9 +15,9 @@
 #define BUS_IN_BYTES 4
 #define BUS_BURST 16
 
-uint32_t alloc_offset;
-int fd;
-uint8_t *map;			/* mmapped array of char's */
+static uint32_t alloc_offset;
+static int fd;
+static uint8_t *map;		/* mmapped array of char's */
 
 int num_of_devices;
 struct xdma_dev xdma_devices[MAX_DEVICES];
