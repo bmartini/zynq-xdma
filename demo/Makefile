@@ -18,11 +18,11 @@ all: $(EXECUTABLE)
 
 
 test : xdma-test.o
-	$(CC) $(LDFLAGS) $< -o $@
+	$(CC) $< -o $@ $(LDFLAGS)
 
 
 demo : xdma-demo.o
-	$(CC) $(LDFLAGS) $< -o $@
+	$(CC) $< -o $@ $(LDFLAGS)
 
 
 .c.o:
