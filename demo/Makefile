@@ -1,28 +1,28 @@
 CC = gcc
-LDFLAGS :=
+LDFLAGS := -lxdma
 CFLAGS := -c -Wall
-INCLUDES := -I../dev
+INCLUDES := -I. -I../dev
 
 EXECUTABLE = \
+	app \
 	demo \
 	test
 
-SOURCES = \
-	xdma-demo.c \
-	xdma-test.c
-
-OBJECTS = $(SOURCES:.c=.o)
 
 .PHONY : all
 all: $(EXECUTABLE)
 
 
 test : xdma-test.o
-	$(CC) $(LDFLAGS) $< -o $@
+	$(CC) $< -o $@ $(LDFLAGS)
 
 
 demo : xdma-demo.o
-	$(CC) $(LDFLAGS) $< -o $@
+	$(CC) $< -o $@ $(LDFLAGS)
+
+
+app : xdma-app.o
+	$(CC) $< -o $@ $(LDFLAGS)
 
 
 .c.o:

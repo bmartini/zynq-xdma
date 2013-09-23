@@ -1,7 +1,7 @@
 CC = gcc
 LDFLAGS := -lxdma
 CFLAGS := -c -Wall -Werror
-INCLUDES := -I../dev
+INCLUDES := -I. -I../dev
 
 
 all : libxdma
@@ -15,16 +15,6 @@ libxdma.o :
 .PHONY : libxdma
 libxdma : libxdma.o
 	$(CC) -shared -o libxdma.so libxdma.o
-
-
-.PHONY : app.o
-app.o :
-	$(CC) $(CFLAGS) $(INCLUDES) xdma-app.c
-
-
-.PHONY : app
-app : app.o
-	$(CC) -o app xdma-app.o $(LDFLAGS)
 
 
 install : libxdma
@@ -42,4 +32,4 @@ uninstall :
 
 .PHONY : clean
 clean :
-	rm -f *.o libxdma.so app
+	rm -f *.o libxdma.so
