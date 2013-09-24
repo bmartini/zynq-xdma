@@ -64,6 +64,17 @@ To remove the module.
 sudo rmmod xdma
 ```
 
+To install the module and have it loaded at boot, first install the udev rule
+as shown above and then follow the below instructions.
+
+```bash
+sudo mkdir -p /lib/modules/$(uname -r)/extra/
+sudo cp xdma.ko /lib/modules/$(uname -r)/extra/
+sudo depmod -a
+sudo modprobe xdma
+sudo sh -c 'echo "xdma" >> /etc/modules'
+```
+
 
 ## Compiling and Running Demo
 
