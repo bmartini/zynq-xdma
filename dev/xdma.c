@@ -476,11 +476,15 @@ void xdma_probe(void)
 	dma_cap_set(DMA_SLAVE | DMA_PRIVATE, mask);
 
 	for (;;) {
-		match_tx = (DMA_MEM_TO_DEV & 0xFF) | XILINX_DMA_IP_DMA;
+		match_tx = (DMA_MEM_TO_DEV & 0xFF) | XILINX_DMA_IP_DMA |
+				(num_devices << XILINX_DMA_DEVICE_ID_SHIFT);
+
 		tx_chan = dma_request_channel(mask, xdma_filter,
 					      (void *)&match_tx);
 
-		match_rx = (DMA_DEV_TO_MEM & 0xFF) | XILINX_DMA_IP_DMA;
+		match_rx = (DMA_DEV_TO_MEM & 0xFF) | XILINX_DMA_IP_DMA |
+				(num_devices << XILINX_DMA_DEVICE_ID_SHIFT);
+
 		rx_chan = dma_request_channel(mask, xdma_filter,
 					      (void *)&match_rx);
 
