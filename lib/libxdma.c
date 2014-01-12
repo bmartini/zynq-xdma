@@ -1,12 +1,14 @@
 #include "libxdma.h"
 
-// the below define is a hack
-#define u32 unsigned int
+// the below defines are a hack that enables the use of kernel data types
+// without having to included standard kernel headers
+#define u32 uint32_t
+// dma_cookie_t is defined in the kernel header <linux/dmaengine.h>
+#define dma_cookie_t int32_t
 #include "xdma.h"
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -171,7 +173,7 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 	if (src_used) {
 		src_buf.chan = xdma_devices[device_id].tx_chan;
 		src_buf.completion = xdma_devices[device_id].tx_cmp;
-		src_buf.cookie = (u32) NULL;
+		src_buf.cookie = 0;
 		src_buf.buf_offset = (u32) xdma_calc_offset(src_ptr);
 		src_buf.buf_size = (u32) (src_length * sizeof(src_ptr[0]));
 		src_buf.dir = XDMA_MEM_TO_DEV;
@@ -184,7 +186,7 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 	if (dst_used) {
 		dst_buf.chan = xdma_devices[device_id].rx_chan;
 		dst_buf.completion = xdma_devices[device_id].rx_cmp;
-		dst_buf.cookie = (u32) NULL;
+		dst_buf.cookie = 0;
 		dst_buf.buf_offset = (u32) xdma_calc_offset(dst_ptr);
 		dst_buf.buf_size = (u32) (dst_length * sizeof(dst_ptr[0]));
 		dst_buf.dir = XDMA_DEV_TO_MEM;
