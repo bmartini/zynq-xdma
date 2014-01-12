@@ -1,6 +1,7 @@
 /*
  * Wrapper Driver used to control a two-channel Xilinx DMA Engine
  */
+#include <linux/dmaengine.h>
 #include "xdma.h"
 
 #include <linux/module.h>
@@ -177,7 +178,7 @@ void xdma_prep_buffer(struct xdma_buf_info *buf_info)
 		       "<%s> Error: dmaengine_prep_slave_single error\n",
 		       MODULE_NAME);
 
-		buf_info->cookie = (u32) NULL;
+		buf_info->cookie = -EBUSY;
 	} else {
 		chan_desc->callback = xdma_sync_callback;
 		chan_desc->callback_param = cmp;
@@ -189,7 +190,7 @@ void xdma_prep_buffer(struct xdma_buf_info *buf_info)
 			       MODULE_NAME);
 		}
 
-		buf_info->cookie = (u32) & cookie;
+		buf_info->cookie = cookie;
 	}
 }
 
