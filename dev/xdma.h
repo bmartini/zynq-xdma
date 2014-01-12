@@ -47,8 +47,8 @@ extern "C" {
 	struct xdma_buf_info {
 		u32 chan;	/* (struct dma_chan *) */
 		u32 completion;	/* (struct completion *) callback_param */
-		u32 cookie;	/* dma_cookie_t */
 
+		dma_cookie_t cookie;
 		u32 buf_offset;
 		u32 buf_size;
 		enum xdma_direction dir;
@@ -57,8 +57,8 @@ extern "C" {
 	struct xdma_transfer {
 		u32 chan;	/* (struct dma_chan *) */
 		u32 completion;	/* (struct completion *) callback_param */
-		u32 cookie;	/* dma_cookie_t */
 
+		dma_cookie_t cookie;
 		u32 wait;	/* true/false */
 	};
 
