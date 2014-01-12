@@ -4,15 +4,14 @@ CFLAGS := -c -Wall -Werror
 INCLUDES := -I. -I../dev
 
 
+.PHONY : all
 all : libxdma
 
 
-.PHONY : libxdma.o
 libxdma.o :
 	$(CC) $(CFLAGS) $(INCLUDES) -fpic libxdma.c
 
 
-.PHONY : libxdma
 libxdma : libxdma.o
 	$(CC) -shared -o libxdma.so libxdma.o
 
