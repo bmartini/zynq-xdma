@@ -171,7 +171,7 @@ void xdma_prep_buffer(struct xdma_buf_info *buf_info)
 	len = buf_info->buf_size;
 	dir = xdma_to_dma_direction(buf_info->dir);
 
-	flags = DMA_CTRL_ACK | DMA_COMPL_SKIP_DEST_UNMAP | DMA_PREP_INTERRUPT;
+	flags = DMA_CTRL_ACK | DMA_PREP_INTERRUPT;
 
 	chan_desc = dmaengine_prep_slave_single(chan, buf, len, dir, flags);
 
