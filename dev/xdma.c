@@ -58,7 +58,9 @@ static ssize_t xdma_write(struct file *f, const char __user * buf,
 	if (len > (DMA_LENGTH - 1))
 		return -EINVAL;
 
-	copy_from_user(xdma_addr, buf, len);
+	if (copy_from_user(xdma_addr, buf, len))
+		return -EFAULT;
+
 	xdma_addr[len] = '\0';
 	return len;
 }
