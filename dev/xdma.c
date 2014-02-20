@@ -215,7 +215,7 @@ void xdma_start_transfer(struct xdma_transfer *trans)
 		if (0 == tmo) {
 			printk(KERN_ERR "<%s> Error: transfer timed out\n",
 			       MODULE_NAME);
-		} else if (status != DMA_SUCCESS) {
+		} else if (status != DMA_COMPLETE) {
 			printk(KERN_INFO
 			       "<%s> transfer: returned completion callback status of: \'%s\'\n",
 			       MODULE_NAME,
