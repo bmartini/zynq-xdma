@@ -58,7 +58,9 @@ static ssize_t xdma_write(struct file *f, const char __user * buf,
 	if (len > (DMA_LENGTH - 1))
 		return -EINVAL;
 
-	copy_from_user(xdma_addr, buf, len);
+	if (copy_from_user(xdma_addr, buf, len))
+		return -EFAULT;
+
 	xdma_addr[len] = '\0';
 	return len;
 }
@@ -169,7 +171,7 @@ void xdma_prep_buffer(struct xdma_buf_info *buf_info)
 	len = buf_info->buf_size;
 	dir = xdma_to_dma_direction(buf_info->dir);
 
-	flags = DMA_CTRL_ACK | DMA_COMPL_SKIP_DEST_UNMAP | DMA_PREP_INTERRUPT;
+	flags = DMA_CTRL_ACK | DMA_PREP_INTERRUPT;
 
 	chan_desc = dmaengine_prep_slave_single(chan, buf, len, dir, flags);
 
@@ -215,7 +217,7 @@ void xdma_start_transfer(struct xdma_transfer *trans)
 		if (0 == tmo) {
 			printk(KERN_ERR "<%s> Error: transfer timed out\n",
 			       MODULE_NAME);
-		} else if (status != DMA_SUCCESS) {
+		} else if (status != DMA_COMPLETE) {
 			printk(KERN_INFO
 			       "<%s> transfer: returned completion callback status of: \'%s\'\n",
 			       MODULE_NAME,
