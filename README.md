@@ -16,6 +16,9 @@ inserted in. It is recommended to uses the Linux kernel maintained by Xilinx.
 git clone https://github.com/Xilinx/linux-xlnx.git
 ```
 
+It has been tested to work with the linux-xlnx master-next merge tag 'v3.15'
+(commit 40dde7e248951426abcba254e7e070f209005afb).
+
 The driver module can be compiling outside of the Linux kernel source tree. A
 variable 'KDIR' in the Makefile is used to point to the kernel source
 directory. The default value has it pointing to the default Linux install
