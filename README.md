@@ -16,6 +16,9 @@ inserted in. It is recommended to uses the Linux kernel maintained by Xilinx.
 git clone https://github.com/Xilinx/linux-xlnx.git
 ```
 
+It has been tested to work with the linux-xlnx master-next merge tag 'v3.15'
+(commit 40dde7e248951426abcba254e7e070f209005afb).
+
 The driver module can be compiling outside of the Linux kernel source tree. A
 variable 'KDIR' in the Makefile is used to point to the kernel source
 directory. The default value has it pointing to the default Linux install
@@ -85,3 +88,20 @@ loopback device and that it is being compiled on the Zedboard.
 cd demo
 make
 ```
+
+
+## Tips for getting working hardware
+
+When defining the DMA engine for the hardware, set the width of the buffer
+length register to 23 bits. (Double click on the DMA core in Vivado IP
+integrator).
+
+A simple PlanAhead project for a Zedboard hardware loopback system that can be
+used with the driver can be found:
+https://github.com/bmartini/zedboard-simple-loopback It includes a working
+devicetree source file.
+
+If the error "<xdma> Error: allocating dma memory failed" is generated, check
+when compiling the Linux kernel that Contiguous Memory Allocator (CMA) is built
+in. In 'make menuconfig' you can find it in 'Device Drivers -> Generic Driver
+Options' under 'Contiguous Memory Allocator'. Or in ".config" CONFIG_DMA_CMA=y.
