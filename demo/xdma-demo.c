@@ -48,19 +48,19 @@ int main(int argc, char *argv[])
 	 */
 	// fill tx with a value
 	for (i = 0; i < LENGTH; i++) {
-		map[LENGTH + i] = 'B';
+		map[LENGTH + i] = 'D';
 	}
 	map[LENGTH + LENGTH - 1] = '\n';
 
 	// fill rx with a value
 	for (i = 0; i < LENGTH; i++) {
-		map[i] = 'A';
+		map[i] = 'C';
 	}
 	map[LENGTH - 1] = '\n';
 
 	printf("test: rx buffer before transmit:\n");
 	for (i = 0; i < 10; i++) {
-		printf("%d\t", map[i]);
+		printf("%c\t", map[i]);
 	}
 	printf("\n");
 
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
 
 	printf("test: rx buffer after transmit:\n");
 	for (i = 0; i < 10; i++) {
-		printf("%d\t", map[i]);
+		printf("%c\t", map[i]);
 	}
 	printf("\n");
 
