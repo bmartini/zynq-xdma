@@ -1,5 +1,6 @@
 // the below define is a hack
 #define u32 unsigned int
+#define dma_cookie_t unsigned int
 #include "xdma.h"
 
 #include <stdio.h>
