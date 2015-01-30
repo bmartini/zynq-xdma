@@ -13,7 +13,7 @@ libxdma.o :
 
 
 libxdma : libxdma.o
-	$(CC) -shared -o libxdma.so libxdma.o
+	$(CC) -shared -Wl,-soname,libxdma.so -o libxdma.so libxdma.o
 
 
 install : libxdma
