@@ -31,10 +31,10 @@ extern "C" {
 	int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 				     uint32_t * src_ptr, uint32_t src_length,
 				     uint32_t * dst_ptr, uint32_t dst_length);
-                     
-    int xdma_stop_transaction(int device_id,
-				     uint32_t * src_ptr, uint32_t src_length,
-				     uint32_t * dst_ptr, uint32_t dst_length);
+
+	int xdma_stop_transaction(int device_id,
+				  uint32_t * src_ptr, uint32_t src_length,
+				  uint32_t * dst_ptr, uint32_t dst_length);
 
 #ifdef __cplusplus
 }

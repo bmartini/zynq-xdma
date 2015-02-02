@@ -110,7 +110,8 @@ static void xdma_get_dev_info(u32 device_id, struct xdma_dev *dev)
 	memcpy(dev, xdma_dev_info[i], sizeof(struct xdma_dev));
 }
 
-static enum dma_transfer_direction xdma_to_dma_direction(enum xdma_direction xdma_dir)
+static enum dma_transfer_direction xdma_to_dma_direction(enum xdma_direction
+							 xdma_dir)
 {
 	enum dma_transfer_direction dma_dir;
 
@@ -157,7 +158,7 @@ static void xdma_device_control(struct xdma_chan_cfg *chan_cfg)
 static int xdma_prep_buffer(struct xdma_buf_info *buf_info)
 {
 	int ret = 0;
-    struct dma_chan *chan;
+	struct dma_chan *chan;
 	dma_addr_t buf;
 	size_t len;
 	enum dma_transfer_direction dir;
@@ -180,7 +181,7 @@ static int xdma_prep_buffer(struct xdma_buf_info *buf_info)
 		printk(KERN_ERR
 		       "<%s> Error: dmaengine_prep_slave_single error\n",
 		       MODULE_NAME);
-        ret = -1;
+		ret = -1;
 		buf_info->cookie = -EBUSY;
 	} else {
 		chan_desc->callback = xdma_sync_callback;
@@ -191,18 +192,18 @@ static int xdma_prep_buffer(struct xdma_buf_info *buf_info)
 		if (dma_submit_error(cookie)) {
 			printk(KERN_ERR "<%s> Error: tx_submit error\n",
 			       MODULE_NAME);
-            ret = -1;
+			ret = -1;
 		}
 
 		buf_info->cookie = cookie;
 	}
-    
-    return ret;
+
+	return ret;
 }
 
 static int xdma_start_transfer(struct xdma_transfer *trans)
 {
-    int ret = 0;
+	int ret = 0;
 	unsigned long tmo = msecs_to_jiffies(3000);
 	enum dma_status status;
 	struct dma_chan *chan;
@@ -222,16 +223,16 @@ static int xdma_start_transfer(struct xdma_transfer *trans)
 		if (0 == tmo) {
 			printk(KERN_ERR "<%s> Error: transfer timed out\n",
 			       MODULE_NAME);
-            ret = -1;
+			ret = -1;
 		} else if (status != DMA_COMPLETE) {
 			printk(KERN_DEBUG
 			       "<%s> transfer: returned completion callback status of: \'%s\'\n",
 			       MODULE_NAME,
 			       status == DMA_ERROR ? "error" : "in progress");
-            ret = -1;
+			ret = -1;
 		}
 	}
-    return ret;
+	return ret;
 }
 
 static void xdma_stop_transfer(struct dma_chan *chan)
@@ -330,11 +331,12 @@ static void xdma_test_transfer(void)
 	       MODULE_NAME, (tf.tv_usec - ti.tv_usec));
 	printk(KERN_DEBUG "<%s> test: DMA bytes sent: %d\n", MODULE_NAME,
 	       LENGTH);
-	printk(KERN_DEBUG "<%s> test: DMA speed in Mbytes/s: %ld\n", MODULE_NAME,
-	       LENGTH / (tf.tv_usec - ti.tv_usec));
+	printk(KERN_DEBUG "<%s> test: DMA speed in Mbytes/s: %ld\n",
+	       MODULE_NAME, LENGTH / (tf.tv_usec - ti.tv_usec));
 
 	// display contents after transfer:
-	printk(KERN_DEBUG "<%s> test: rx buffer after transmit:\n", MODULE_NAME);
+	printk(KERN_DEBUG "<%s> test: rx buffer after transmit:\n",
+	       MODULE_NAME);
 	for (i = 0; i < 10; i++) {
 		printk("%c\t", xdma_addr[i]);
 	}
@@ -343,7 +345,7 @@ static void xdma_test_transfer(void)
 
 static long xdma_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
-    long ret = 0;
+	long ret = 0;
 	struct xdma_dev xdma_dev;
 	struct xdma_chan_cfg chan_cfg;
 	struct xdma_buf_info buf_info;
@@ -455,7 +457,8 @@ static bool xdma_filter(struct dma_chan *chan, void *param)
 	return false;
 }
 
-static void xdma_add_dev_info(struct dma_chan *tx_chan, struct dma_chan *rx_chan)
+static void xdma_add_dev_info(struct dma_chan *tx_chan,
+			      struct dma_chan *rx_chan)
 {
 	struct completion *tx_cmp, *rx_cmp;
 
@@ -489,13 +492,13 @@ static void xdma_probe(void)
 
 	for (;;) {
 		match_tx = (DMA_MEM_TO_DEV & 0xFF) | XILINX_DMA_IP_DMA |
-				(num_devices << XILINX_DMA_DEVICE_ID_SHIFT);
+		    (num_devices << XILINX_DMA_DEVICE_ID_SHIFT);
 
 		tx_chan = dma_request_channel(mask, xdma_filter,
 					      (void *)&match_tx);
 
 		match_rx = (DMA_DEV_TO_MEM & 0xFF) | XILINX_DMA_IP_DMA |
-				(num_devices << XILINX_DMA_DEVICE_ID_SHIFT);
+		    (num_devices << XILINX_DMA_DEVICE_ID_SHIFT);
 
 		rx_chan = dma_request_channel(mask, xdma_filter,
 					      (void *)&match_rx);

@@ -159,7 +159,7 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 			     uint32_t * src_ptr, uint32_t src_length,
 			     uint32_t * dst_ptr, uint32_t dst_length)
 {
-    int ret = 0;
+	int ret = 0;
 	struct xdma_buf_info dst_buf;
 	struct xdma_buf_info src_buf;
 	struct xdma_transfer dst_trans;
@@ -180,7 +180,7 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 		src_buf.buf_size = (u32) (src_length * sizeof(src_ptr[0]));
 		src_buf.dir = XDMA_MEM_TO_DEV;
 		ret = (int)ioctl(fd, XDMA_PREP_BUF, &src_buf);
-        if (ret < 0) {
+		if (ret < 0) {
 			perror("Error ioctl set src (tx) buf");
 			return ret;
 		}
@@ -193,7 +193,7 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 		dst_buf.buf_offset = (u32) xdma_calc_offset(dst_ptr);
 		dst_buf.buf_size = (u32) (dst_length * sizeof(dst_ptr[0]));
 		dst_buf.dir = XDMA_DEV_TO_MEM;
-        ret = (int)ioctl(fd, XDMA_PREP_BUF, &dst_buf);
+		ret = (int)ioctl(fd, XDMA_PREP_BUF, &dst_buf);
 		if (ret < 0) {
 			perror("Error ioctl set dst (rx) buf");
 			return ret;
@@ -205,7 +205,7 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 		src_trans.completion = xdma_devices[device_id].tx_cmp;
 		src_trans.cookie = src_buf.cookie;
 		src_trans.wait = (0 != (wait & XDMA_WAIT_SRC));
-        ret = (int)ioctl(fd, XDMA_START_TRANSFER, &src_trans);
+		ret = (int)ioctl(fd, XDMA_START_TRANSFER, &src_trans);
 		if (ret < 0) {
 			perror("Error ioctl start src (tx) trans");
 			return ret;
@@ -218,7 +218,7 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 		dst_trans.cookie = dst_buf.cookie;
 		dst_trans.wait = (0 != (wait & XDMA_WAIT_DST));
 		ret = (int)ioctl(fd, XDMA_START_TRANSFER, &dst_trans);
-        if (ret < 0) {
+		if (ret < 0) {
 			perror("Error ioctl start dst (rx) trans");
 			return ret;
 		}
@@ -228,10 +228,10 @@ int xdma_perform_transaction(int device_id, enum xdma_wait wait,
 }
 
 int xdma_stop_transaction(int device_id,
-			     uint32_t * src_ptr, uint32_t src_length,
-			     uint32_t * dst_ptr, uint32_t dst_length)
+			  uint32_t * src_ptr, uint32_t src_length,
+			  uint32_t * dst_ptr, uint32_t dst_length)
 {
-    int ret = 0;
+	int ret = 0;
 	struct xdma_transfer dst_trans;
 	struct xdma_transfer src_trans;
 	const bool src_used = ((src_ptr != NULL) && (src_length != 0));
@@ -244,7 +244,7 @@ int xdma_stop_transaction(int device_id,
 
 	if (src_used) {
 		src_trans.chan = xdma_devices[device_id].tx_chan;
-        ret = (int)ioctl(fd, XDMA_STOP_TRANSFER, &(src_trans.chan));
+		ret = (int)ioctl(fd, XDMA_STOP_TRANSFER, &(src_trans.chan));
 		if (ret < 0) {
 			perror("Error ioctl stop src (tx) trans");
 			return ret;
@@ -254,7 +254,7 @@ int xdma_stop_transaction(int device_id,
 	if (dst_used) {
 		dst_trans.chan = xdma_devices[device_id].rx_chan;
 		ret = (int)ioctl(fd, XDMA_STOP_TRANSFER, &(dst_trans.chan));
-        if (ret < 0) {
+		if (ret < 0) {
 			perror("Error ioctl stop dst (rx) trans");
 			return ret;
 		}
