@@ -38,6 +38,22 @@ or
 cd zynq-xdma/dev/
 make KDIR=../../linux-xlnx
 ```
+##CROSS COMPILING
+ For cross compiling, please make sure that the environnement varaible CROSS_COMPILE point toward your compilation toolchain.
+ Use for /dev
+  make ARCH=<your architecture>  KDIR=../../linux-xlnx
+  eg for zynq :
+  make ARCH=arm KDIR=../../linux-xlnx
+ Use for /lib
+  make ARCH=<your architecture>  
+Use for /demo
+  make ARCH=<your architecture>
+ 
+##Compile order
+Compile directories in that order 
+First : /dev
+Second : /lib
+Third : /demo
 
 
 ## Inserting Module
