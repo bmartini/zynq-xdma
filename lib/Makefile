@@ -1,4 +1,4 @@
-CC = gcc
+CC = ${CROSS_COMPILE}gcc
 LDFLAGS := -lxdma
 CFLAGS := -c -Wall -Werror
 INCLUDES := -I. -I../dev
