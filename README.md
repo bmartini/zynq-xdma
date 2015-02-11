@@ -41,26 +41,19 @@ make KDIR=../../linux-xlnx
 
 ## Cross Compiling
 
-For cross compiling, please make sure that the environment variable
-CROSS_COMPILE point toward your compilation toolchain and ARCH is your target
-architecture.
+A cross compile tool chain is installed onto your system with the Xilinx SDK.
+Once Xilinx is installed, export the following environmental variables and
+afterwards invoking "make" will cross compile the library's and applications in
+this repo.
 
-Use for *dev*
 ```bash
-make ARCH=arm KDIR=../../linux-xlnx
-```
-
-Use for *lib*
-```bash
-make ARCH=arm
-```
-
-Use for *demo*
-```bash
-make ARCH=arm
+export PATH=/opt/Xilinx/SDK/2014.4/gnu/arm/lin/bin:$PATH
+export CROSS_COMPILE=arm-xilinx-linux-gnueabi-
+export ARCH=arm
 ```
 
 ## Compile Order
+
 Compile directories in that order
 First : /dev
 Second : /lib
