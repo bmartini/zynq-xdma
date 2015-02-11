@@ -39,6 +39,26 @@ cd zynq-xdma/dev/
 make KDIR=../../linux-xlnx
 ```
 
+## Cross Compiling
+
+A cross compile tool chain is installed onto your system with the Xilinx SDK.
+Once Xilinx is installed, export the following environmental variables and
+afterwards invoking "make" will cross compile the library's and applications in
+this repo.
+
+```bash
+export PATH=/opt/Xilinx/SDK/2014.4/gnu/arm/lin/bin:$PATH
+export CROSS_COMPILE=arm-xilinx-linux-gnueabi-
+export ARCH=arm
+```
+
+## Compile Order
+
+Compile directories in that order
+First : /dev
+Second : /lib
+Third : /demo
+
 
 ## Inserting Module
 
