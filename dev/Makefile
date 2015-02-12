@@ -1,5 +1,4 @@
 obj-m += xdma.o
-CC=${CROSS_COMPILE}gcc
 
 # Path to the Linux kernel, if not passed in as arg, set default.
 ifeq ($(KDIR),)
